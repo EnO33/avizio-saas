@@ -1,6 +1,7 @@
 {
-  "short_name": "TanStack App",
-  "name": "Create TanStack App Sample",
+  "short_name": "Avizio",
+  "name": "Avizio — Gestion des avis clients",
+  "lang": "fr",
   "icons": [
     {
       "src": "favicon.ico",
