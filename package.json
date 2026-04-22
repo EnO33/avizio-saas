@@ -1,5 +1,7 @@
 {
-  "name": "avizio",
+  "name": "avizio-saas",
+  "version": "0.0.0",
+  "description": "SaaS B2B de gestion et de réponse aux avis clients pour commerces de proximité.",
   "private": true,
   "type": "module",
   "imports": {
