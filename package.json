@@ -17,7 +17,8 @@
     "lint": "biome lint",
     "check": "biome check",
     "check:fix": "biome check --write",
-    "check:all": "bun run typecheck && bun run check && bun run test"
+    "check:all": "bun run typecheck && bun run check && bun run test",
+    "prepare": "husky"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.1.18",
@@ -43,7 +44,9 @@
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
     "@vitejs/plugin-react": "^6.0.1",
+    "husky": "^9.1.7",
     "jsdom": "^28.1.0",
+    "lint-staged": "^16.4.0",
     "typescript": "^5.7.2",
     "vite": "^8.0.0",
     "vitest": "^3.0.5"
@@ -53,5 +56,8 @@
       "esbuild",
       "lightningcss"
     ]
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js,jsx,json,jsonc,css}": "biome check --write --no-errors-on-unmatched"
   }
 }
