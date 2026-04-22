@@ -15,3 +15,6 @@ dist-ssr
 __unconfig*
 todos.json
 coverage
+
+.vercel
+.env*.local
