@@ -5,6 +5,8 @@ const envSchema = z.object({
 	NODE_ENV: z
 		.enum(["development", "test", "production"])
 		.default("development"),
+	CLERK_PUBLISHABLE_KEY: z.string().startsWith("pk_"),
+	CLERK_SECRET_KEY: z.string().startsWith("sk_"),
 });
 
 const parsed = envSchema.safeParse(process.env);
