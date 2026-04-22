@@ -1,0 +1,35 @@
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "Europe/Paris"
+    open-pull-requests-limit: 5
+    groups:
+      tanstack:
+        patterns:
+          - "@tanstack/*"
+      clerk:
+        patterns:
+          - "@clerk/*"
+      drizzle:
+        patterns:
+          - "drizzle-*"
+      dev-dependencies:
+        dependency-type: "development"
+        exclude-patterns:
+          - "@biomejs/*"
+    commit-message:
+      prefix: "chore(deps)"
+      include: "scope"
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    commit-message:
+      prefix: "chore(ci)"
