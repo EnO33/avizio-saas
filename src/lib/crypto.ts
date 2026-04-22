@@ -7,23 +7,31 @@ export type CryptoError =
 	| { readonly kind: "unknown_version"; readonly version: string }
 	| { readonly kind: "decryption_failed" };
 
+export type KeyMap = Readonly<Record<string, Buffer>>;
+
 const ALGO = "aes-256-gcm";
 const NONCE_LEN = 12;
 const TAG_LEN = 16;
 
-function getKey(version: string): Result<Buffer, CryptoError> {
-	const base64 = env.ENCRYPTION_KEYS_JSON[version];
-	if (!base64) return err({ kind: "unknown_version", version });
-	return ok(Buffer.from(base64, "base64"));
-}
+const envKeys: KeyMap = Object.freeze(
+	Object.fromEntries(
+		Object.entries(env.ENCRYPTION_KEYS_JSON).map(([version, base64]) => [
+			version,
+			Buffer.from(base64, "base64"),
+		]),
+	),
+);
 
-export function encryptToken(plaintext: string): Result<string, CryptoError> {
-	const version = env.ENCRYPTION_KEY_CURRENT;
-	const keyResult = getKey(version);
-	if (keyResult.isErr()) return err(keyResult.error);
+export function encryptWith(
+	plaintext: string,
+	keys: KeyMap,
+	version: string,
+): Result<string, CryptoError> {
+	const key = keys[version];
+	if (!key) return err({ kind: "unknown_version", version });
 
 	const nonce = randomBytes(NONCE_LEN);
-	const cipher = createCipheriv(ALGO, keyResult.value, nonce);
+	const cipher = createCipheriv(ALGO, key, nonce);
 	const ciphertext = Buffer.concat([
 		cipher.update(plaintext, "utf8"),
 		cipher.final(),
@@ -36,7 +44,10 @@ export function encryptToken(plaintext: string): Result<string, CryptoError> {
 	);
 }
 
-export function decryptToken(stored: string): Result<string, CryptoError> {
+export function decryptWith(
+	stored: string,
+	keys: KeyMap,
+): Result<string, CryptoError> {
 	const parts = stored.split(":");
 	if (parts.length !== 3) return err({ kind: "invalid_format" });
 	const [version, nonceB64, combinedB64] = parts;
@@ -44,8 +55,8 @@ export function decryptToken(stored: string): Result<string, CryptoError> {
 		return err({ kind: "invalid_format" });
 	}
 
-	const keyResult = getKey(version);
-	if (keyResult.isErr()) return err(keyResult.error);
+	const key = keys[version];
+	if (!key) return err({ kind: "unknown_version", version });
 
 	const nonce = Buffer.from(nonceB64, "base64url");
 	const combined = Buffer.from(combinedB64, "base64url");
@@ -57,7 +68,7 @@ export function decryptToken(stored: string): Result<string, CryptoError> {
 	const ciphertext = combined.subarray(0, combined.length - TAG_LEN);
 	const tag = combined.subarray(combined.length - TAG_LEN);
 
-	const decipher = createDecipheriv(ALGO, keyResult.value, nonce);
+	const decipher = createDecipheriv(ALGO, key, nonce);
 	decipher.setAuthTag(tag);
 
 	const decrypted = fromThrowable(
@@ -71,3 +82,9 @@ export function decryptToken(stored: string): Result<string, CryptoError> {
 	if (decrypted.isErr()) return err(decrypted.error);
 	return ok(decrypted.value);
 }
+
+export const encryptToken = (plaintext: string): Result<string, CryptoError> =>
+	encryptWith(plaintext, envKeys, env.ENCRYPTION_KEY_CURRENT);
+
+export const decryptToken = (stored: string): Result<string, CryptoError> =>
+	decryptWith(stored, envKeys);
