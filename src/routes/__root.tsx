@@ -1,9 +1,15 @@
 import { ClerkProvider } from "@clerk/tanstack-react-start";
-import { TanStackDevtools } from "@tanstack/react-devtools";
 import { createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
-import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
+import { lazy, Suspense } from "react";
 
 import appCss from "../styles.css?url";
+
+// Dev-only devtools. Dynamic import + `import.meta.env.DEV` gate so the
+// devtools module isn't bundled in prod — it touches `window` at import
+// time via `@solid-primitives/event-listener` and crashes SSR.
+const DevTools = import.meta.env.DEV
+	? lazy(() => import("../components/shared/devtools"))
+	: null;
 
 export const Route = createRootRoute({
 	head: () => ({
@@ -42,17 +48,11 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 			</head>
 			<body>
 				<ClerkProvider>{children}</ClerkProvider>
-				<TanStackDevtools
-					config={{
-						position: "bottom-right",
-					}}
-					plugins={[
-						{
-							name: "Tanstack Router",
-							render: <TanStackRouterDevtoolsPanel />,
-						},
-					]}
-				/>
+				{DevTools ? (
+					<Suspense>
+						<DevTools />
+					</Suspense>
+				) : null}
 				<Scripts />
 			</body>
 		</html>
