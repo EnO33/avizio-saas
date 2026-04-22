@@ -98,8 +98,14 @@ describe("crypto — decryption errors", () => {
 
 	it("returns decryption_failed when the ciphertext is tampered", () => {
 		const stored = okOrThrow(encryptWith("secret", keys, "v1"));
-		const last = stored.slice(-1);
-		const tampered = stored.slice(0, -1) + (last === "A" ? "B" : "A");
+		// Flip the FIRST char of the ciphertext part — the top bits of base64
+		// always encode data bytes, so this is guaranteed to corrupt the
+		// plaintext (flipping trailing chars may only change padding bits).
+		const lastColon = stored.lastIndexOf(":");
+		const firstCombinedChar = stored[lastColon + 1];
+		if (!firstCombinedChar) throw new Error("bad stored format");
+		const flipped = firstCombinedChar === "A" ? "B" : "A";
+		const tampered = `${stored.slice(0, lastColon + 1)}${flipped}${stored.slice(lastColon + 2)}`;
 		const result = decryptWith(tampered, keys);
 		expect(result.isErr()).toBe(true);
 		if (result.isOk()) throw new Error("unreachable");
