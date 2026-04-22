@@ -1,6 +1,6 @@
-import { createFileRoute } from "@tanstack/react-router"
+import { createFileRoute } from "@tanstack/react-router";
 
-export const Route = createFileRoute("/")({ component: Home })
+export const Route = createFileRoute("/")({ component: Home });
 
 function Home() {
 	return (
@@ -10,5 +10,5 @@ function Home() {
 				Gérez et répondez aux avis clients de votre commerce avec l'IA.
 			</p>
 		</main>
-	)
+	);
 }
