@@ -22,8 +22,10 @@ updates:
         dependency-type: "development"
         exclude-patterns:
           - "@biomejs/*"
+    # `include: scope` injects (deps) / (deps-development) — leave prefix as
+    # `chore` so the result is a clean `chore(deps): ...`, not `chore(deps)(deps):`.
     commit-message:
-      prefix: "chore(deps)"
+      prefix: "chore"
       include: "scope"
 
   - package-ecosystem: "github-actions"

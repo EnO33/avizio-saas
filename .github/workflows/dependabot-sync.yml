@@ -1,0 +1,49 @@
+name: Dependabot bun.lock sync
+
+# Dependabot updates package.json but doesn't always regenerate bun.lock,
+# which breaks `bun install --frozen-lockfile` in the main CI job. This
+# workflow runs on Dependabot PRs only, regenerates bun.lock, and pushes
+# the fix back to the PR branch so the main CI job can then pass.
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+  pull-requests: read
+
+jobs:
+  sync:
+    name: Regenerate bun.lock
+    # Skip forks: the GITHUB_TOKEN write permission only applies to same-repo PRs.
+    if: >-
+      github.actor == 'dependabot[bot]' &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.9
+
+      - name: Regenerate bun.lock
+        run: bun install
+
+      - name: Commit lockfile if changed
+        run: |
+          if git diff --quiet bun.lock; then
+            echo "bun.lock already in sync — nothing to do."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add bun.lock
+          git commit -m "chore: regenerate bun.lock [dependabot sync]"
+          git push
