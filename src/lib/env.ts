@@ -1,13 +1,54 @@
+import { fromThrowable } from "neverthrow";
 import { z } from "zod";
 
-const envSchema = z.object({
-	DATABASE_URL: z.url().startsWith("postgres"),
-	NODE_ENV: z
-		.enum(["development", "test", "production"])
-		.default("development"),
-	CLERK_PUBLISHABLE_KEY: z.string().startsWith("pk_"),
-	CLERK_SECRET_KEY: z.string().startsWith("sk_"),
+const safeJsonParse = fromThrowable(
+	(raw: string) => JSON.parse(raw) as unknown,
+	() => "json_parse_failed" as const,
+);
+
+const encryptionKeysMapSchema = z.record(
+	z.string().regex(/^v\d+$/, "version keys must match v<number>"),
+	z
+		.base64()
+		.refine(
+			(s) => Buffer.from(s, "base64").length === 32,
+			"encryption key must be base64 of exactly 32 bytes",
+		),
+);
+
+const encryptionKeysJsonField = z.string().transform((raw, ctx) => {
+	const parsed = safeJsonParse(raw);
+	if (parsed.isErr()) {
+		ctx.addIssue({ code: "custom", message: "not valid JSON" });
+		return z.NEVER;
+	}
+	const validated = encryptionKeysMapSchema.safeParse(parsed.value);
+	if (!validated.success) {
+		ctx.addIssue({
+			code: "custom",
+			message: z.prettifyError(validated.error),
+		});
+		return z.NEVER;
+	}
+	return validated.data;
 });
+
+const envSchema = z
+	.object({
+		DATABASE_URL: z.url().startsWith("postgres"),
+		NODE_ENV: z
+			.enum(["development", "test", "production"])
+			.default("development"),
+		CLERK_PUBLISHABLE_KEY: z.string().startsWith("pk_"),
+		CLERK_SECRET_KEY: z.string().startsWith("sk_"),
+		ENCRYPTION_KEYS_JSON: encryptionKeysJsonField,
+		ENCRYPTION_KEY_CURRENT: z.string().regex(/^v\d+$/, "must match v<number>"),
+	})
+	.refine((data) => data.ENCRYPTION_KEY_CURRENT in data.ENCRYPTION_KEYS_JSON, {
+		message:
+			"ENCRYPTION_KEY_CURRENT must reference a version present in ENCRYPTION_KEYS_JSON",
+		path: ["ENCRYPTION_KEY_CURRENT"],
+	});
 
 const parsed = envSchema.safeParse(process.env);
 
