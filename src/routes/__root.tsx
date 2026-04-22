@@ -15,7 +15,12 @@ export const Route = createRootRoute({
         content: 'width=device-width, initial-scale=1',
       },
       {
-        title: 'TanStack Start Starter',
+        title: 'Avizio — Gestion des avis clients',
+      },
+      {
+        name: 'description',
+        content:
+          "Avizio aide les commerces de proximité à gérer et répondre aux avis Google, TripAdvisor et Trustpilot avec l'IA.",
       },
     ],
     links: [
@@ -30,7 +35,7 @@ export const Route = createRootRoute({
 
 function RootDocument({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="fr">
       <head>
         <HeadContent />
       </head>
