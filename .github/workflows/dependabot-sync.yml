@@ -16,9 +16,11 @@ permissions:
 jobs:
   sync:
     name: Regenerate bun.lock
-    # Skip forks: the GITHUB_TOKEN write permission only applies to same-repo PRs.
+    # Trigger on any PR whose branch name starts with `dependabot/` (that's
+    # Dependabot's naming convention, regardless of who reopens the PR).
+    # Same-repo check keeps the `contents: write` token away from forks.
     if: >-
-      github.actor == 'dependabot[bot]' &&
+      startsWith(github.head_ref, 'dependabot/') &&
       github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     steps:
