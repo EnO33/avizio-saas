@@ -37,7 +37,7 @@
     "@tanstack/router-plugin": "^1.132.0",
     "drizzle-orm": "^0.45.2",
     "drizzle-zod": "^0.8.3",
-    "lucide-react": "^0.545.0",
+    "lucide-react": "^1.8.0",
     "neverthrow": "^8.2.0",
     "nitro": "npm:nitro-nightly@latest",
     "pino": "^10.3.1",
