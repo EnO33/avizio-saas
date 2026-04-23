@@ -56,6 +56,10 @@ const envSchema = z
 			.string()
 			.min(32, "OAUTH_STATE_SECRET must be at least 32 characters")
 			.describe("HMAC key used to sign/verify the OAuth `state` parameter"),
+		ANTHROPIC_API_KEY: z
+			.string()
+			.startsWith("sk-ant-")
+			.describe("Anthropic API key for Claude models (response generation)"),
 	})
 	.refine((data) => data.ENCRYPTION_KEY_CURRENT in data.ENCRYPTION_KEYS_JSON, {
 		message:

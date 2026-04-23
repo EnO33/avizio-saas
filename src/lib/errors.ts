@@ -108,6 +108,31 @@ export type GbpError =
 			readonly body: string;
 	  };
 
+/**
+ * Errors raised when calling the Anthropic API for response generation.
+ * Separated from `IntegrationError` because the caller handles them
+ * differently — a rate-limit retries, a safety block requires human review,
+ * an invalid response is a prompt-engineering regression.
+ */
+export type AIError =
+	| { readonly kind: "ai_rate_limited"; readonly retryAfterMs: number }
+	| {
+			readonly kind: "ai_safety_block";
+			readonly reason: string;
+	  }
+	| {
+			readonly kind: "ai_empty_response";
+	  }
+	| {
+			readonly kind: "ai_api_error";
+			readonly status: number;
+			readonly message: string;
+	  }
+	| {
+			readonly kind: "ai_network";
+			readonly message: string;
+	  };
+
 export type UnknownError = {
 	readonly kind: "unknown";
 	readonly message: string;
