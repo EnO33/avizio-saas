@@ -47,7 +47,14 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 				<HeadContent />
 			</head>
 			<body>
-				<ClerkProvider>{children}</ClerkProvider>
+				<ClerkProvider
+					signInUrl="/sign-in"
+					signUpUrl="/sign-up"
+					signInFallbackRedirectUrl="/dashboard"
+					signUpFallbackRedirectUrl="/dashboard"
+				>
+					{children}
+				</ClerkProvider>
 				{DevTools ? (
 					<Suspense>
 						<DevTools />

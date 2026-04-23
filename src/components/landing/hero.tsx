@@ -1,4 +1,4 @@
-import { SignUpButton } from "@clerk/tanstack-react-start";
+import { Link } from "@tanstack/react-router";
 import { Sparkles } from "lucide-react";
 
 export function Hero() {
@@ -23,14 +23,12 @@ export function Hero() {
 						économisées chaque jour.
 					</p>
 					<div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
-						<SignUpButton>
-							<button
-								type="button"
-								className="rounded-md bg-neutral-900 px-6 py-3 font-medium text-sm text-white hover:bg-neutral-800"
-							>
-								Commencer l'essai gratuit — 14 jours
-							</button>
-						</SignUpButton>
+						<Link
+							to="/sign-up"
+							className="rounded-md bg-neutral-900 px-6 py-3 font-medium text-sm text-white hover:bg-neutral-800"
+						>
+							Commencer l'essai gratuit — 14 jours
+						</Link>
 						<a
 							href="#how-it-works"
 							className="rounded-md border border-neutral-200 bg-white px-6 py-3 font-medium text-neutral-900 text-sm hover:bg-neutral-50"
