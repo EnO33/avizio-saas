@@ -1,8 +1,25 @@
+import { and, desc, eq, isNull } from "drizzle-orm";
 import type { DbError } from "#/lib/errors";
 import { unknownToMessage } from "#/lib/errors";
 import { fromPromise, type Result } from "#/lib/result";
 import { db } from "../client";
 import { connections } from "../schema";
+
+/**
+ * Client-safe projection of a `connections` row. Crucially does NOT carry the
+ * encrypted access/refresh tokens — tokens stay server-side, only the
+ * metadata needed to render the dashboard is shipped over the wire.
+ */
+export type ConnectionSummary = {
+	readonly id: string;
+	readonly platform: "google" | "tripadvisor" | "trustpilot" | "thefork";
+	readonly platformAccountLabel: string | null;
+	readonly scopes: readonly string[] | null;
+	readonly createdAt: Date;
+	readonly accessTokenExpiresAt: Date | null;
+	readonly lastSyncedAt: Date | null;
+	readonly lastSyncError: string | null;
+};
 
 export type UpsertGoogleConnectionInput = {
 	readonly organizationId: string;
@@ -16,6 +33,38 @@ export type UpsertGoogleConnectionInput = {
 
 function toDbError(e: unknown): DbError {
 	return { kind: "db_unknown", message: unknownToMessage(e) };
+}
+
+/**
+ * List the org's active platform connections in reverse chronological order
+ * of creation. Revoked rows are filtered out — a revoked connection is
+ * effectively gone from the user's point of view, they have to reconnect.
+ */
+export async function listConnectionsForOrg(
+	organizationId: string,
+): Promise<Result<ConnectionSummary[], DbError>> {
+	return fromPromise(
+		db
+			.select({
+				id: connections.id,
+				platform: connections.platform,
+				platformAccountLabel: connections.platformAccountLabel,
+				scopes: connections.scopes,
+				createdAt: connections.createdAt,
+				accessTokenExpiresAt: connections.accessTokenExpiresAt,
+				lastSyncedAt: connections.lastSyncedAt,
+				lastSyncError: connections.lastSyncError,
+			})
+			.from(connections)
+			.where(
+				and(
+					eq(connections.organizationId, organizationId),
+					isNull(connections.revokedAt),
+				),
+			)
+			.orderBy(desc(connections.createdAt)),
+		toDbError,
+	);
 }
 
 /**
