@@ -1,4 +1,5 @@
 import type { ConnectionSummary } from "#/server/db/queries/connections";
+import { DisconnectButton } from "./disconnect-button";
 
 const dateFormatter = new Intl.DateTimeFormat("fr-FR", { dateStyle: "medium" });
 
@@ -35,7 +36,13 @@ function ConnectionRow({ connection }: { connection: ConnectionSummary }) {
 					</div>
 				</div>
 			</div>
-			<ConnectionStatus connection={connection} />
+			<div className="flex shrink-0 items-center gap-2">
+				<ConnectionStatus connection={connection} />
+				<DisconnectButton
+					connectionId={connection.id}
+					platformLabel={platformLabel(connection.platform)}
+				/>
+			</div>
 		</li>
 	);
 }

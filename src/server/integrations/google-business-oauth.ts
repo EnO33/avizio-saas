@@ -11,6 +11,7 @@ import { err, fromPromise, fromThrowable, ok, type Result } from "#/lib/result";
 const PROVIDER = "google";
 const AUTH_ENDPOINT = "https://accounts.google.com/o/oauth2/v2/auth";
 const TOKEN_ENDPOINT = "https://oauth2.googleapis.com/token";
+const REVOKE_ENDPOINT = "https://oauth2.googleapis.com/revoke";
 const VALID_ISSUERS = new Set([
 	"https://accounts.google.com",
 	"accounts.google.com",
@@ -162,6 +163,43 @@ export async function exchangeCodeForTokens(params: {
 	}
 
 	return ok(parsed.data);
+}
+
+/**
+ * Revoke a token (access or refresh) server-side with Google. Per RFC 7009 +
+ * Google's docs, a 200 means revoked; a 400 with `invalid_token` means the
+ * token was already invalid — both are success states for our purposes
+ * (the user ends up with no active authorization).
+ */
+export async function revokeGoogleToken(
+	token: string,
+): Promise<Result<void, OAuthError | IntegrationError>> {
+	const responseResult = await fromPromise(
+		fetch(REVOKE_ENDPOINT, {
+			method: "POST",
+			headers: { "content-type": "application/x-www-form-urlencoded" },
+			body: new URLSearchParams({ token }).toString(),
+		}),
+		toNetworkError,
+	);
+	if (responseResult.isErr()) return err(responseResult.error);
+	const response = responseResult.value;
+
+	if (response.ok) return ok(undefined);
+
+	const bodyResult = await fromPromise(response.text(), toNetworkError);
+	const body = bodyResult.isOk() ? bodyResult.value : "";
+
+	// `invalid_token` means it was already revoked / expired — treat as success.
+	if (response.status === 400 && body.includes("invalid_token")) {
+		return ok(undefined);
+	}
+
+	return err({
+		kind: "oauth_token_exchange_failed",
+		status: response.status,
+		body,
+	});
 }
 
 /**

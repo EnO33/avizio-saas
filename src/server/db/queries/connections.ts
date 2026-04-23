@@ -1,7 +1,7 @@
 import { and, desc, eq, isNull } from "drizzle-orm";
 import type { DbError } from "#/lib/errors";
 import { unknownToMessage } from "#/lib/errors";
-import { fromPromise, type Result } from "#/lib/result";
+import { err, fromPromise, ok, type Result } from "#/lib/result";
 import { db } from "../client";
 import { connections } from "../schema";
 
@@ -33,6 +33,81 @@ export type UpsertGoogleConnectionInput = {
 
 function toDbError(e: unknown): DbError {
 	return { kind: "db_unknown", message: unknownToMessage(e) };
+}
+
+/**
+ * Encrypted tokens needed to revoke a connection upstream. Kept separate
+ * from `ConnectionSummary` because this projection intentionally includes
+ * ciphertexts — it's for server-side consumption only and must never be
+ * returned from a server fn to the client.
+ */
+export type ConnectionTokens = {
+	readonly id: string;
+	readonly encryptedAccessToken: string;
+	readonly encryptedRefreshToken: string | null;
+};
+
+/**
+ * Fetch the encrypted tokens for a connection, scoped to its organization.
+ * Returns `db_not_found` if the id doesn't exist, doesn't belong to the org,
+ * or the connection is already revoked.
+ */
+export async function getConnectionForRevoke(params: {
+	id: string;
+	organizationId: string;
+}): Promise<Result<ConnectionTokens, DbError>> {
+	const rows = await fromPromise(
+		db
+			.select({
+				id: connections.id,
+				encryptedAccessToken: connections.encryptedAccessToken,
+				encryptedRefreshToken: connections.encryptedRefreshToken,
+			})
+			.from(connections)
+			.where(
+				and(
+					eq(connections.id, params.id),
+					eq(connections.organizationId, params.organizationId),
+					isNull(connections.revokedAt),
+				),
+			)
+			.limit(1),
+		toDbError,
+	);
+	if (rows.isErr()) return err(rows.error);
+	const first = rows.value[0];
+	if (!first) return err({ kind: "db_not_found" });
+	return ok(first);
+}
+
+/**
+ * Soft-delete a connection by stamping `revoked_at`. Scoped by organization
+ * so one org can't clobber another's connection. Returns `db_not_found` when
+ * the id is unknown or already revoked — callers usually treat that as a
+ * user error worth surfacing.
+ */
+export async function markConnectionRevoked(params: {
+	id: string;
+	organizationId: string;
+}): Promise<Result<void, DbError>> {
+	const now = new Date();
+	const rows = await fromPromise(
+		db
+			.update(connections)
+			.set({ revokedAt: now, updatedAt: now })
+			.where(
+				and(
+					eq(connections.id, params.id),
+					eq(connections.organizationId, params.organizationId),
+					isNull(connections.revokedAt),
+				),
+			)
+			.returning({ id: connections.id }),
+		toDbError,
+	);
+	if (rows.isErr()) return err(rows.error);
+	if (rows.value.length === 0) return err({ kind: "db_not_found" });
+	return ok(undefined);
 }
 
 /**
