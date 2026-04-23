@@ -98,11 +98,16 @@ function ForgotPasswordPage() {
 			});
 			return;
 		}
-		if (signIn.status === "complete") {
-			await signIn.finalize({
-				navigate: ({ decorateUrl }) => {
-					window.location.href = decorateUrl("/dashboard");
-				},
+		// Trust the submitPassword result (no error ⇒ password reset succeeded)
+		// and let Clerk's default navigate handle the redirect via
+		// `signInFallbackRedirectUrl` on ClerkProvider.
+		const finalizeResult = await signIn.finalize();
+		if (finalizeResult.error) {
+			resetForm.setError("root", {
+				message: clerkErrorToMessage(
+					finalizeResult.error,
+					"Impossible de finaliser la réinitialisation.",
+				),
 			});
 		}
 	};

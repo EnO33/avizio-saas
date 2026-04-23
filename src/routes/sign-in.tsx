@@ -46,23 +46,23 @@ function SignInPage() {
 			});
 			return;
 		}
-		if (signIn.status === "complete") {
-			await signIn.finalize({
-				navigate: ({ decorateUrl }) => {
-					const url = decorateUrl("/dashboard");
-					if (url.startsWith("http")) {
-						window.location.href = url;
-					} else {
-						window.location.href = url;
-					}
-				},
-			});
-			return;
-		}
 		if (signIn.status === "needs_second_factor") {
 			form.setError("root", {
 				message:
 					"Authentification à deux facteurs requise — pas encore supportée côté UI. Contacte le support.",
+			});
+			return;
+		}
+		// Trust the password result: if no error, finalize. `signIn.status` can
+		// be stale in this React tick. No custom `navigate` — Clerk falls back
+		// to `signInFallbackRedirectUrl` from ClerkProvider (`/dashboard`).
+		const finalizeResult = await signIn.finalize();
+		if (finalizeResult.error) {
+			form.setError("root", {
+				message: clerkErrorToMessage(
+					finalizeResult.error,
+					"Impossible de finaliser la connexion.",
+				),
 			});
 		}
 	};
