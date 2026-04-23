@@ -1,6 +1,7 @@
 import type {
 	OrganizationJSON,
 	OrganizationMembershipJSON,
+	SessionWebhookEvent,
 	UserJSON,
 } from "@clerk/backend";
 import { eq } from "drizzle-orm";
@@ -13,8 +14,11 @@ import {
 	organizationJsonToNewRow,
 	organizationJsonToUpdateRow,
 	organizationMembershipJsonToRow,
+	sessionJsonToUserSignIn,
 	userJsonToRow,
 } from "./clerk-transforms";
+
+type SessionWebhookEventJSON = SessionWebhookEvent["data"];
 
 type VoidResult = Result<void, DbError>;
 
@@ -107,8 +111,25 @@ export async function handleMembershipDelete(
 	).map(() => undefined);
 }
 
+export async function handleSessionCreated(
+	session: SessionWebhookEventJSON,
+): Promise<VoidResult> {
+	const { userId, lastSignInAt } = sessionJsonToUserSignIn(session);
+	// If the user row doesn't exist yet (e.g. `session.created` arrived before
+	// `user.created` in a fresh signup), UPDATE affects 0 rows and returns OK —
+	// the subsequent `user.created` handler will insert with last_sign_in_at
+	// already populated from `UserJSON.last_sign_in_at`, so no data is lost.
+	return fromPromise(
+		db
+			.update(users)
+			.set({ lastSignInAt, updatedAt: new Date() })
+			.where(eq(users.id, userId)),
+		toDbError,
+	).map(() => undefined);
+}
+
 export function handleUnknownEvent(): Promise<VoidResult> {
 	// Not an error — just skip. The webhook subscription might emit events
-	// we don't care about (session.*, email.*, etc.).
+	// we don't care about (email.*, sms.*, etc.).
 	return Promise.resolve(ok(undefined));
 }
