@@ -104,11 +104,24 @@ function SignUpPage() {
 
 	const onGoogle = async () => {
 		signUpForm.clearErrors("root");
-		await signUp.sso({
-			strategy: "oauth_google",
-			redirectCallbackUrl: "/sso-callback",
-			redirectUrl: "/sign-up",
-		});
+		// `signUp.sso()` redirects on success; a rejected promise means the
+		// SDK couldn't start the flow (stale session, network, etc.). Without
+		// this catch the failure vanishes into an unhandled rejection — biome
+		// allows try/catch at this external-lib boundary.
+		try {
+			await signUp.sso({
+				strategy: "oauth_google",
+				redirectCallbackUrl: "/sso-callback",
+				redirectUrl: "/sign-up",
+			});
+		} catch (e) {
+			signUpForm.setError("root", {
+				message: clerkErrorToMessage(
+					e,
+					"Inscription Google indisponible. Réessaie dans un instant ou utilise l'email.",
+				),
+			});
+		}
 	};
 
 	if (needsVerification) {
