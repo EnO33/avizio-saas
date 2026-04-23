@@ -302,7 +302,26 @@ export const auditLog = pgTable(
 
 export const organizationsRelations = relations(organizations, ({ many }) => ({
 	establishments: many(establishments),
+	memberships: many(organizationMemberships),
 }));
+
+export const usersRelations = relations(users, ({ many }) => ({
+	memberships: many(organizationMemberships),
+}));
+
+export const organizationMembershipsRelations = relations(
+	organizationMemberships,
+	({ one }) => ({
+		organization: one(organizations, {
+			fields: [organizationMemberships.organizationId],
+			references: [organizations.id],
+		}),
+		user: one(users, {
+			fields: [organizationMemberships.userId],
+			references: [users.id],
+		}),
+	}),
+);
 
 export const establishmentsRelations = relations(
 	establishments,
@@ -342,6 +361,14 @@ export const responsesRelations = relations(responses, ({ one }) => ({
 
 export type Organization = typeof organizations.$inferSelect;
 export type NewOrganization = typeof organizations.$inferInsert;
+
+export type User = typeof users.$inferSelect;
+export type NewUser = typeof users.$inferInsert;
+
+export type OrganizationMembership =
+	typeof organizationMemberships.$inferSelect;
+export type NewOrganizationMembership =
+	typeof organizationMemberships.$inferInsert;
 
 export type Establishment = typeof establishments.$inferSelect;
 export type NewEstablishment = typeof establishments.$inferInsert;
