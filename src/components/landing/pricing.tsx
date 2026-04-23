@@ -1,4 +1,4 @@
-import { SignUpButton } from "@clerk/tanstack-react-start";
+import { Link } from "@tanstack/react-router";
 import { Check } from "lucide-react";
 
 type Plan = {
@@ -92,18 +92,16 @@ export function Pricing() {
 									</li>
 								))}
 							</ul>
-							<SignUpButton>
-								<button
-									type="button"
-									className={
-										plan.highlight
-											? "mt-8 w-full rounded-md bg-neutral-900 py-3 font-medium text-sm text-white hover:bg-neutral-800"
-											: "mt-8 w-full rounded-md border border-neutral-200 bg-white py-3 font-medium text-neutral-900 text-sm hover:bg-neutral-50"
-									}
-								>
-									Essai gratuit 14 jours
-								</button>
-							</SignUpButton>
+							<Link
+								to="/sign-up"
+								className={
+									plan.highlight
+										? "mt-8 block w-full rounded-md bg-neutral-900 py-3 text-center font-medium text-sm text-white hover:bg-neutral-800"
+										: "mt-8 block w-full rounded-md border border-neutral-200 bg-white py-3 text-center font-medium text-neutral-900 text-sm hover:bg-neutral-50"
+								}
+							>
+								Essai gratuit 14 jours
+							</Link>
 						</article>
 					))}
 				</div>

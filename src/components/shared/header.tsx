@@ -1,9 +1,4 @@
-import {
-	Show,
-	SignInButton,
-	SignUpButton,
-	UserButton,
-} from "@clerk/tanstack-react-start";
+import { Show, UserButton } from "@clerk/tanstack-react-start";
 import { Link } from "@tanstack/react-router";
 
 export function Header() {
@@ -29,22 +24,18 @@ export function Header() {
 				</nav>
 				<div className="flex items-center gap-3">
 					<Show when="signed-out">
-						<SignInButton>
-							<button
-								type="button"
-								className="text-neutral-600 text-sm hover:text-neutral-900"
-							>
-								Se connecter
-							</button>
-						</SignInButton>
-						<SignUpButton>
-							<button
-								type="button"
-								className="rounded-md bg-neutral-900 px-4 py-2 font-medium text-sm text-white hover:bg-neutral-800"
-							>
-								Essai gratuit
-							</button>
-						</SignUpButton>
+						<Link
+							to="/sign-in"
+							className="text-neutral-600 text-sm hover:text-neutral-900"
+						>
+							Se connecter
+						</Link>
+						<Link
+							to="/sign-up"
+							className="rounded-md bg-neutral-900 px-4 py-2 font-medium text-sm text-white hover:bg-neutral-800"
+						>
+							Essai gratuit
+						</Link>
 					</Show>
 					<Show when="signed-in">
 						<Link
