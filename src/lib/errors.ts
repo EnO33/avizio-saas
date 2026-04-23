@@ -123,6 +123,12 @@ export type AIError =
 	| {
 			readonly kind: "ai_empty_response";
 	  }
+	/**
+	 * Anthropic account is out of credits. Peeled from `ai_api_error` because
+	 * the UX is very different — the user needs to top up on their console,
+	 * not retry or contact support.
+	 */
+	| { readonly kind: "ai_no_credits" }
 	| {
 			readonly kind: "ai_api_error";
 			readonly status: number;

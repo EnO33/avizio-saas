@@ -97,6 +97,8 @@ function resultToMessage(result: GenerateResponseDraftUiResult): string {
 			return "Anthropic a limité la cadence. Réessaie dans une minute.";
 		case "ai_safety_block":
 			return "L'IA a refusé de répondre à cet avis. Rédige la réponse à la main ou contacte le support.";
+		case "ai_no_credits":
+			return "Crédit Anthropic épuisé. Recharge ton compte sur console.anthropic.com/settings/billing puis réessaie.";
 		case "ai_error":
 			return "Erreur inattendue côté IA. Réessaie dans un instant.";
 		case "db_error":

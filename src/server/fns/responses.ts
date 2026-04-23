@@ -21,6 +21,7 @@ export type GenerateResponseDraftUiResult =
 	| { readonly kind: "review_not_found" }
 	| { readonly kind: "ai_rate_limited" }
 	| { readonly kind: "ai_safety_block" }
+	| { readonly kind: "ai_no_credits" }
 	| { readonly kind: "ai_error" }
 	| { readonly kind: "db_error" };
 
@@ -75,6 +76,7 @@ export const generateResponseDraftFn = createServerFn({ method: "POST" })
 			const e = draftResult.error;
 			if (e.kind === "ai_rate_limited") return { kind: "ai_rate_limited" };
 			if (e.kind === "ai_safety_block") return { kind: "ai_safety_block" };
+			if (e.kind === "ai_no_credits") return { kind: "ai_no_credits" };
 			logger.error(
 				{
 					event: "ai_draft_generate_failed",

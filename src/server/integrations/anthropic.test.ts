@@ -154,6 +154,33 @@ describe("generateMessage — error paths", () => {
 		expect(result.error.status).toBe(500);
 	});
 
+	it("peels a 400 'credit balance is too low' error into ai_no_credits", async () => {
+		const create = vi.fn().mockRejectedValue(
+			new APIError(
+				400,
+				{
+					type: "error",
+					error: {
+						type: "invalid_request_error",
+						message:
+							"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.",
+					},
+				},
+				'400 {"type":"error","error":{"type":"invalid_request_error","message":"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."}}',
+				new Headers(),
+			),
+		);
+		const client: FakeClient = { messages: { create } };
+
+		const result = await generateMessage(
+			{ systemPrompt: "s", userPrompt: "u" },
+			{ client: asClient(client) },
+		);
+		expect(result.isErr()).toBe(true);
+		if (result.isOk()) throw new Error("unreachable");
+		expect(result.error.kind).toBe("ai_no_credits");
+	});
+
 	it("maps an arbitrary throw to ai_network", async () => {
 		const result = await generateMessage(
 			{ systemPrompt: "s", userPrompt: "u" },
