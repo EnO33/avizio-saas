@@ -70,6 +70,30 @@ export const organizations = pgTable("organizations", {
 		.defaultNow(),
 });
 
+// ─── Users (mirror of Clerk users) ────────────────────────────────────────
+
+export const users = pgTable(
+	"users",
+	{
+		id: text("id").primaryKey(), // Clerk user id (user_xxx)
+		email: text("email").notNull(),
+		emailVerified: boolean("email_verified").notNull().default(false),
+		firstName: text("first_name"),
+		lastName: text("last_name"),
+		imageUrl: text("image_url"),
+		lastSignInAt: timestamp("last_sign_in_at", { withTimezone: true }),
+		createdAt: timestamp("created_at", { withTimezone: true })
+			.notNull()
+			.defaultNow(),
+		updatedAt: timestamp("updated_at", { withTimezone: true })
+			.notNull()
+			.defaultNow(),
+	},
+	(t) => ({
+		emailIdx: uniqueIndex("users_email_unique").on(t.email),
+	}),
+);
+
 // ─── Establishments ───────────────────────────────────────────────────────
 
 export const establishments = pgTable(
