@@ -4,6 +4,10 @@ import {
 	EstablishmentForm,
 	type EstablishmentFormValues,
 } from "#/components/establishments/establishment-form";
+import {
+	EstablishmentSettingsForm,
+	type EstablishmentSettingsFormValues,
+} from "#/components/establishments/establishment-settings-form";
 import { GbpLinkPanel } from "#/components/establishments/gbp-link-panel";
 import {
 	getEstablishment,
@@ -54,7 +58,7 @@ function EditEstablishmentForm({
 }) {
 	const navigate = useNavigate();
 
-	const onSubmit = async (
+	const onMainSubmit = async (
 		values: EstablishmentFormValues,
 	): Promise<string | undefined> => {
 		const result = await updateEstablishmentFn({
@@ -72,6 +76,28 @@ function EditEstablishmentForm({
 			await navigate({ to: "/establishments" });
 			return undefined;
 		}
+		if (result.kind === "unauthenticated") {
+			return "Ta session a expiré. Reconnecte-toi pour enregistrer.";
+		}
+		if (result.kind === "not_found") {
+			return "Cet établissement n'existe plus — retourne à la liste.";
+		}
+		return "Impossible d'enregistrer. Réessaie dans un instant.";
+	};
+
+	const onSettingsSubmit = async (
+		values: EstablishmentSettingsFormValues,
+	): Promise<string | undefined> => {
+		const result = await updateEstablishmentFn({
+			data: {
+				id: establishment.id,
+				defaultTone: values.defaultTone,
+				brandContext:
+					values.brandContext.length > 0 ? values.brandContext : null,
+			},
+		});
+
+		if (result.kind === "ok") return undefined;
 		if (result.kind === "unauthenticated") {
 			return "Ta session a expiré. Reconnecte-toi pour enregistrer.";
 		}
@@ -101,7 +127,7 @@ function EditEstablishmentForm({
 			<div className="rounded-lg border border-neutral-200 bg-white p-6">
 				<EstablishmentForm
 					submitLabel="Enregistrer"
-					onSubmit={onSubmit}
+					onSubmit={onMainSubmit}
 					initialValues={{
 						name: establishment.name,
 						city: establishment.city,
@@ -111,6 +137,23 @@ function EditEstablishmentForm({
 					}}
 				/>
 			</div>
+
+			<section className="space-y-4 rounded-lg border border-neutral-200 bg-white p-6">
+				<div>
+					<h2 className="font-semibold text-lg">Réponses automatiques</h2>
+					<p className="mt-1 text-neutral-500 text-sm">
+						Règle le ton et le contexte qu'Avizio utilise pour rédiger les
+						brouillons de réponse.
+					</p>
+				</div>
+				<EstablishmentSettingsForm
+					onSubmit={onSettingsSubmit}
+					initialValues={{
+						defaultTone: establishment.defaultTone,
+						brandContext: establishment.brandContext ?? "",
+					}}
+				/>
+			</section>
 
 			<GbpLinkPanel establishment={establishment} />
 
