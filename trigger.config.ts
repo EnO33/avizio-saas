@@ -5,20 +5,17 @@ import { defineConfig } from "@trigger.dev/sdk/v3";
  * `dev` / `deploy` — NOT by the Vercel app at runtime. The app uses
  * `@trigger.dev/sdk` only to dispatch tasks by their id.
  *
- * The project ref is passed via `TRIGGER_PROJECT_REF` — locally through
- * `.env.local`, in CI through a GitHub Actions repository variable. We
- * fail fast if missing so a misconfigured environment is obvious rather
- * than silently trying to deploy to the wrong project.
+ * Project ref comes from `TRIGGER_PROJECT_REF` — locally through
+ * `.env.local`, in CI through a GitHub Actions repository variable. The
+ * placeholder fallback exists only to keep this file importable from
+ * inside Trigger's remote Docker builder, which re-imports the config
+ * during the indexer step without access to the GH Actions env. The CLI
+ * (outside the container) always reads the real ref before kicking off a
+ * build — if "Project not found: proj_placeholder" shows up in a deploy
+ * run, the env var is missing at the CLI level, not here.
  */
-const projectRef = process.env.TRIGGER_PROJECT_REF;
-if (!projectRef || projectRef.length === 0) {
-	throw new Error(
-		"TRIGGER_PROJECT_REF env var is required. Set it in .env.local for local dev, or as a GitHub Actions variable for CI deploys.",
-	);
-}
-
 export default defineConfig({
-	project: projectRef,
+	project: process.env.TRIGGER_PROJECT_REF ?? "proj_placeholder",
 	dirs: ["./trigger"],
 	runtime: "node",
 	logLevel: "info",
