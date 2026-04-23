@@ -8,6 +8,7 @@ import { clerkErrorToMessage } from "#/components/auth/clerk-error";
 import { Divider } from "#/components/auth/divider";
 import { GoogleButton } from "#/components/auth/google-button";
 import { TextField } from "#/components/auth/text-field";
+import { redirectIfSignedIn } from "#/server/fns/auth-guards";
 
 const signUpSchema = z
 	.object({
@@ -33,6 +34,7 @@ type SignUpInput = z.infer<typeof signUpSchema>;
 type VerificationInput = z.infer<typeof verificationSchema>;
 
 export const Route = createFileRoute("/sign-up")({
+	beforeLoad: async () => redirectIfSignedIn(),
 	component: SignUpPage,
 });
 
@@ -82,10 +84,7 @@ function SignUpPage() {
 			});
 			return;
 		}
-		// `signUp.status` can be stale in this React tick — trust the verify
-		// result instead and call `finalize()` without a custom `navigate`.
-		// Clerk's built-in navigation reads `signUpFallbackRedirectUrl` from
-		// our ClerkProvider config and sends the user to `/dashboard`.
+		// Trust the verify result — `signUp.status` can be stale in this tick.
 		const finalizeResult = await signUp.finalize();
 		if (finalizeResult.error) {
 			verificationForm.setError("root", {
@@ -94,7 +93,13 @@ function SignUpPage() {
 					"Impossible de finaliser l'inscription.",
 				),
 			});
+			return;
 		}
+		// Hard reload so the next request carries the freshly-set Clerk
+		// cookies. `/dashboard` then authenticates server-side (via
+		// `_authed.beforeLoad`) and renders. Clerk's built-in `navigate` is a
+		// no-op for custom flows, so we own the redirect here.
+		window.location.href = "/dashboard";
 	};
 
 	const onGoogle = async () => {

@@ -1,17 +1,8 @@
-import { auth } from "@clerk/tanstack-react-start/server";
-import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
-import { createServerFn } from "@tanstack/react-start";
-
-const ensureAuthenticated = createServerFn().handler(async () => {
-	const session = await auth();
-	if (!session.isAuthenticated) {
-		throw redirect({ to: "/" });
-	}
-	return { userId: session.userId, orgId: session.orgId };
-});
+import { createFileRoute, Outlet } from "@tanstack/react-router";
+import { ensureSignedIn } from "#/server/fns/auth-guards";
 
 export const Route = createFileRoute("/_authed")({
-	beforeLoad: async () => ensureAuthenticated(),
+	beforeLoad: async () => ensureSignedIn(),
 	component: AuthedLayout,
 });
 

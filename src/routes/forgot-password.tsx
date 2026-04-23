@@ -7,6 +7,7 @@ import { z } from "zod";
 import { AuthLayout } from "#/components/auth/auth-layout";
 import { clerkErrorToMessage } from "#/components/auth/clerk-error";
 import { TextField } from "#/components/auth/text-field";
+import { redirectIfSignedIn } from "#/server/fns/auth-guards";
 
 const emailSchema = z.object({
 	email: z.email("Email invalide"),
@@ -32,6 +33,7 @@ type EmailInput = z.infer<typeof emailSchema>;
 type ResetInput = z.infer<typeof resetSchema>;
 
 export const Route = createFileRoute("/forgot-password")({
+	beforeLoad: async () => redirectIfSignedIn(),
 	component: ForgotPasswordPage,
 });
 
@@ -98,9 +100,6 @@ function ForgotPasswordPage() {
 			});
 			return;
 		}
-		// Trust the submitPassword result (no error ⇒ password reset succeeded)
-		// and let Clerk's default navigate handle the redirect via
-		// `signInFallbackRedirectUrl` on ClerkProvider.
 		const finalizeResult = await signIn.finalize();
 		if (finalizeResult.error) {
 			resetForm.setError("root", {
@@ -109,7 +108,11 @@ function ForgotPasswordPage() {
 					"Impossible de finaliser la réinitialisation.",
 				),
 			});
+			return;
 		}
+		// Hard reload so `/dashboard` authenticates via the freshly-set
+		// Clerk cookies. Custom flows don't get auto-navigation from Clerk.
+		window.location.href = "/dashboard";
 	};
 
 	if (step === "reset") {
