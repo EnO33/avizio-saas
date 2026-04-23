@@ -94,6 +94,38 @@ export const users = pgTable(
 	}),
 );
 
+// ─── Organization memberships (user × organization × role) ────────────────
+
+export const organizationMemberships = pgTable(
+	"organization_memberships",
+	{
+		id: text("id").primaryKey(), // Clerk membership id (orgmem_xxx)
+		organizationId: text("organization_id")
+			.notNull()
+			.references(() => organizations.id, { onDelete: "cascade" }),
+		userId: text("user_id")
+			.notNull()
+			.references(() => users.id, { onDelete: "cascade" }),
+		// Clerk role string, e.g. "org:admin", "org:member", or a custom role
+		// configured in the Clerk dashboard. Free-form text on purpose.
+		role: text("role").notNull(),
+		createdAt: timestamp("created_at", { withTimezone: true })
+			.notNull()
+			.defaultNow(),
+		updatedAt: timestamp("updated_at", { withTimezone: true })
+			.notNull()
+			.defaultNow(),
+	},
+	(t) => ({
+		uniqueMembership: uniqueIndex("org_memberships_unique").on(
+			t.organizationId,
+			t.userId,
+		),
+		userIdx: index("org_memberships_user_idx").on(t.userId),
+		orgIdx: index("org_memberships_org_idx").on(t.organizationId),
+	}),
+);
+
 // ─── Establishments ───────────────────────────────────────────────────────
 
 export const establishments = pgTable(
