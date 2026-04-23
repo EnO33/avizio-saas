@@ -83,6 +83,31 @@ export type OAuthError =
 	  }
 	| { readonly kind: "oauth_id_token_invalid" };
 
+/**
+ * Errors surfaced when talking to the Google Business Profile APIs. These
+ * complement `IntegrationError` (network + transport) and `OAuthError`
+ * (token lifecycle) with the domain-specific failure modes the callers
+ * need to handle — token revoked upstream (user removed app access),
+ * scope missing (API access not yet approved), and legacy v4 endpoint
+ * access denied (the reviews + reply gate we're waiting on Google for).
+ */
+export type GbpError =
+	| { readonly kind: "gbp_token_revoked"; readonly connectionId: string }
+	| {
+			readonly kind: "gbp_insufficient_scope";
+			readonly grantedScopes: readonly string[];
+	  }
+	| { readonly kind: "gbp_legacy_api_access_denied" }
+	| {
+			readonly kind: "gbp_invalid_response";
+			readonly issues: readonly ValidationIssue[];
+	  }
+	| {
+			readonly kind: "gbp_http_error";
+			readonly status: number;
+			readonly body: string;
+	  };
+
 export type UnknownError = {
 	readonly kind: "unknown";
 	readonly message: string;
