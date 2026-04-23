@@ -256,6 +256,13 @@ export type ListGbpLocationsResult =
 	| { readonly kind: "unauthenticated" }
 	| { readonly kind: "no_connection" }
 	| { readonly kind: "insufficient_scope" }
+	/**
+	 * Google returned 429 on a Business Profile API call. On this provider
+	 * it usually means "your project hasn't been approved yet, daily quota
+	 * is 0" — distinct from a genuine transient rate limit (which is rare at
+	 * our volumes). The UI surfaces both possibilities.
+	 */
+	| { readonly kind: "rate_limited_or_quota" }
 	| { readonly kind: "connection_revoked" }
 	| { readonly kind: "error" };
 
@@ -316,6 +323,9 @@ export const listGbpLocationsForPicker = createServerFn().handler(
 			if (e.kind === "gbp_insufficient_scope") {
 				return { kind: "insufficient_scope" };
 			}
+			if (e.kind === "integration_rate_limited") {
+				return { kind: "rate_limited_or_quota" };
+			}
 			logger.error(
 				{
 					event: "gbp_picker_list_accounts_failed",
@@ -337,6 +347,9 @@ export const listGbpLocationsForPicker = createServerFn().handler(
 				const e = locResult.error;
 				if (e.kind === "gbp_insufficient_scope") {
 					return { kind: "insufficient_scope" };
+				}
+				if (e.kind === "integration_rate_limited") {
+					return { kind: "rate_limited_or_quota" };
 				}
 				// Partial failure on one account shouldn't blank the whole picker —
 				// log and keep going with what we have.

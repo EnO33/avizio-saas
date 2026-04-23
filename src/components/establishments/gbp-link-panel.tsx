@@ -246,6 +246,18 @@ function PickerBody({
 		);
 	}
 
+	if (state.kind === "rate_limited_or_quota") {
+		return (
+			<StatusMessage tone="amber">
+				Google a renvoyé un quota épuisé (HTTP 429). Sur les APIs Business
+				Profile, ça signifie généralement que la demande d'accès à l'API n'a pas
+				encore été approuvée côté Google (quota journalier = 0) — attends le
+				mail d'approbation de Google et réessaie. Si tu as déjà été approuvé et
+				que ça persiste, c'est un vrai rate limit, patiente quelques minutes.
+			</StatusMessage>
+		);
+	}
+
 	if (state.kind === "connection_revoked") {
 		return (
 			<StatusMessage tone="red">
