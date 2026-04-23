@@ -5,7 +5,9 @@ import { EnsureActiveOrganization } from "#/components/auth/ensure-active-organi
 import { ConnectGoogleButton } from "#/components/connections/connect-google-button";
 import { ConnectionsList } from "#/components/connections/connections-list";
 import { OAuthResultBanner } from "#/components/connections/oauth-result-banner";
+import { ReviewsSummaryCard } from "#/components/reviews/reviews-summary-card";
 import { listConnections } from "#/server/fns/connections";
+import { countReviewsByStatus } from "#/server/fns/reviews";
 
 const dashboardSearchSchema = z.object({
 	connected: z.enum(["google"]).optional(),
@@ -14,13 +16,19 @@ const dashboardSearchSchema = z.object({
 
 export const Route = createFileRoute("/_authed/dashboard")({
 	validateSearch: dashboardSearchSchema,
-	loader: async () => ({ connections: await listConnections() }),
+	loader: async () => {
+		const [connections, reviewCounts] = await Promise.all([
+			listConnections(),
+			countReviewsByStatus(),
+		]);
+		return { connections, reviewCounts };
+	},
 	component: Dashboard,
 });
 
 function Dashboard() {
 	const { userId, orgId } = Route.useRouteContext();
-	const { connections } = Route.useLoaderData();
+	const { connections, reviewCounts } = Route.useLoaderData();
 	const { connected, error } = Route.useSearch();
 
 	const hasGoogleConnection = connections.some((c) => c.platform === "google");
@@ -55,10 +63,9 @@ function Dashboard() {
 						<> · Aucune organisation sélectionnée</>
 					)}
 				</p>
-				<p className="mt-4 text-neutral-500">
-					Les établissements et avis arriveront dans les prochains sprints.
-				</p>
 			</section>
+
+			{orgId ? <ReviewsSummaryCard counts={reviewCounts} /> : null}
 
 			{orgId ? (
 				<section className="space-y-4 rounded-lg border border-neutral-200 p-6">
