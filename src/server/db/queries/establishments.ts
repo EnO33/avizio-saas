@@ -1,4 +1,4 @@
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, eq, isNotNull } from "drizzle-orm";
 import type { DbError } from "#/lib/errors";
 import { unknownToMessage } from "#/lib/errors";
 import { err, fromPromise, ok, type Result } from "#/lib/result";
@@ -261,4 +261,49 @@ export async function unlinkEstablishmentGoogleLocation(params: {
 	const first = rows.value[0];
 	if (!first) return err({ kind: "db_not_found" });
 	return ok(first);
+}
+
+export type LinkedEstablishment = {
+	readonly id: string;
+	readonly googleLocationName: string;
+};
+
+/**
+ * Pull every establishment in the org that has been linked to a Google
+ * Business Profile location. Used by the review-fetch cron to know which
+ * establishments to sync. Ignores rows where `google_location_name` is
+ * null — those haven't been mapped by the user yet.
+ */
+export async function listEstablishmentsWithGoogleLink(
+	organizationId: string,
+): Promise<Result<LinkedEstablishment[], DbError>> {
+	const rowsResult = await fromPromise(
+		db
+			.select({
+				id: establishments.id,
+				googleLocationName: establishments.googleLocationName,
+			})
+			.from(establishments)
+			.where(
+				and(
+					eq(establishments.organizationId, organizationId),
+					isNotNull(establishments.googleLocationName),
+				),
+			)
+			.orderBy(asc(establishments.name)),
+		toDbError,
+	);
+	if (rowsResult.isErr()) return err(rowsResult.error);
+	// Drizzle doesn't narrow the nullable column type even with isNotNull() —
+	// filter explicitly so downstream consumers get a non-null guarantee.
+	const linked: LinkedEstablishment[] = [];
+	for (const row of rowsResult.value) {
+		if (row.googleLocationName !== null) {
+			linked.push({
+				id: row.id,
+				googleLocationName: row.googleLocationName,
+			});
+		}
+	}
+	return ok(linked);
 }
