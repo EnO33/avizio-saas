@@ -72,18 +72,29 @@ function SignUpPage() {
 
 	const onSubmitVerification = async ({ code }: VerificationInput) => {
 		verificationForm.clearErrors("root");
-		await signUp.verifications.verifyEmailCode({ code });
-		if (signUp.status === "complete") {
-			await signUp.finalize({
-				navigate: ({ decorateUrl }) => {
-					window.location.href = decorateUrl("/dashboard");
-				},
+		const verifyResult = await signUp.verifications.verifyEmailCode({ code });
+		if (verifyResult.error) {
+			verificationForm.setError("root", {
+				message: clerkErrorToMessage(
+					verifyResult.error,
+					"Code invalide. Réessayez.",
+				),
 			});
 			return;
 		}
-		verificationForm.setError("root", {
-			message: "Code invalide. Réessayez.",
-		});
+		// `signUp.status` can be stale in this React tick — trust the verify
+		// result instead and call `finalize()` without a custom `navigate`.
+		// Clerk's built-in navigation reads `signUpFallbackRedirectUrl` from
+		// our ClerkProvider config and sends the user to `/dashboard`.
+		const finalizeResult = await signUp.finalize();
+		if (finalizeResult.error) {
+			verificationForm.setError("root", {
+				message: clerkErrorToMessage(
+					finalizeResult.error,
+					"Impossible de finaliser l'inscription.",
+				),
+			});
+		}
 	};
 
 	const onGoogle = async () => {
