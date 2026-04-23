@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { listAccounts, listLocations } from "./google-business";
+import { listAccounts, listLocations, listReviews } from "./google-business";
 
 function jsonResponse(body: unknown, status = 200): Response {
 	return new Response(JSON.stringify(body), {
@@ -356,5 +356,217 @@ describe("listLocations", () => {
 		expect(result.isErr()).toBe(true);
 		if (result.isOk()) throw new Error("unreachable");
 		expect(result.error.kind).toBe("gbp_invalid_response");
+	});
+});
+
+// Fixture shaped after the legacy v4 schema
+// https://developers.google.com/my-business/reference/rest/v4/accounts.locations.reviews/list
+const LIST_REVIEWS_FIXTURE = {
+	reviews: [
+		{
+			name: "accounts/100/locations/987/reviews/rev-1",
+			reviewId: "rev-1",
+			reviewer: {
+				displayName: "Alice Martin",
+				profilePhotoUrl: "https://example.com/alice.png",
+				isAnonymous: false,
+			},
+			starRating: "FIVE",
+			comment: "Excellent accueil, on reviendra !",
+			createTime: "2026-04-20T14:30:00Z",
+			updateTime: "2026-04-20T14:30:00Z",
+			reviewReply: {
+				comment: "Merci Alice, à très vite !",
+				updateTime: "2026-04-20T15:00:00Z",
+			},
+		},
+		{
+			name: "accounts/100/locations/987/reviews/rev-2",
+			reviewId: "rev-2",
+			reviewer: { displayName: "Anonymous user", isAnonymous: true },
+			starRating: "TWO",
+			// No `comment` (rating-only review)
+			createTime: "2026-04-19T10:00:00Z",
+			updateTime: "2026-04-19T10:00:00Z",
+		},
+	],
+	averageRating: 4.3,
+	totalReviewCount: 27,
+	nextPageToken: "page-2",
+};
+
+describe("listReviews", () => {
+	beforeEach(() => {
+		vi.spyOn(globalThis, "fetch");
+	});
+	afterEach(() => {
+		vi.restoreAllMocks();
+	});
+
+	it("GETs the legacy v4 endpoint with Bearer + pageSize defaulting to 50", async () => {
+		const fetchMock = vi.mocked(globalThis.fetch);
+		fetchMock.mockResolvedValueOnce(
+			new Response(JSON.stringify(LIST_REVIEWS_FIXTURE), { status: 200 }),
+		);
+
+		const result = await listReviews({
+			accessToken: "at-1234",
+			locationName: "accounts/100/locations/987",
+		});
+		expect(result.isOk()).toBe(true);
+
+		const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+		const parsed = new URL(url);
+		expect(parsed.origin).toBe("https://mybusiness.googleapis.com");
+		expect(parsed.pathname).toBe("/v4/accounts/100/locations/987/reviews");
+		expect(parsed.searchParams.get("pageSize")).toBe("50");
+		expect(parsed.searchParams.has("pageToken")).toBe(false);
+		const headers = init.headers as Record<string, string>;
+		expect(headers.authorization).toBe("Bearer at-1234");
+	});
+
+	it("forwards pageToken when provided", async () => {
+		const fetchMock = vi.mocked(globalThis.fetch);
+		fetchMock.mockResolvedValueOnce(
+			new Response(JSON.stringify(LIST_REVIEWS_FIXTURE), { status: 200 }),
+		);
+
+		await listReviews({
+			accessToken: "at",
+			locationName: "accounts/1/locations/2",
+			pageSize: 25,
+			pageToken: "cursor-xyz",
+		});
+
+		const [url] = fetchMock.mock.calls[0] as [string, RequestInit];
+		const parsed = new URL(url);
+		expect(parsed.searchParams.get("pageSize")).toBe("25");
+		expect(parsed.searchParams.get("pageToken")).toBe("cursor-xyz");
+	});
+
+	it("flattens reviewer + reviewReply and maps star enum to 1..5", async () => {
+		vi.mocked(globalThis.fetch).mockResolvedValueOnce(
+			new Response(JSON.stringify(LIST_REVIEWS_FIXTURE), { status: 200 }),
+		);
+
+		const result = await listReviews({
+			accessToken: "at",
+			locationName: "accounts/100/locations/987",
+		});
+		expect(result.isOk()).toBe(true);
+		if (result.isErr()) throw new Error("unreachable");
+		expect(result.value.reviews[0]).toEqual({
+			name: "accounts/100/locations/987/reviews/rev-1",
+			reviewId: "rev-1",
+			authorName: "Alice Martin",
+			authorAvatarUrl: "https://example.com/alice.png",
+			isAnonymous: false,
+			rating: 5,
+			content: "Excellent accueil, on reviendra !",
+			publishedAt: "2026-04-20T14:30:00Z",
+			updatedAt: "2026-04-20T14:30:00Z",
+			existingReply: {
+				content: "Merci Alice, à très vite !",
+				updatedAt: "2026-04-20T15:00:00Z",
+			},
+		});
+		expect(result.value.reviews[1]).toEqual({
+			name: "accounts/100/locations/987/reviews/rev-2",
+			reviewId: "rev-2",
+			authorName: "Anonymous user",
+			authorAvatarUrl: null,
+			isAnonymous: true,
+			rating: 2,
+			content: "",
+			publishedAt: "2026-04-19T10:00:00Z",
+			updatedAt: "2026-04-19T10:00:00Z",
+			existingReply: null,
+		});
+	});
+
+	it("surfaces pagination metadata in the response", async () => {
+		vi.mocked(globalThis.fetch).mockResolvedValueOnce(
+			new Response(JSON.stringify(LIST_REVIEWS_FIXTURE), { status: 200 }),
+		);
+
+		const result = await listReviews({
+			accessToken: "at",
+			locationName: "accounts/100/locations/987",
+		});
+		expect(result.isOk()).toBe(true);
+		if (result.isErr()) throw new Error("unreachable");
+		expect(result.value.nextPageToken).toBe("page-2");
+		expect(result.value.averageRating).toBe(4.3);
+		expect(result.value.totalReviewCount).toBe(27);
+	});
+
+	it("maps STAR_RATING_UNSPECIFIED to null", async () => {
+		vi.mocked(globalThis.fetch).mockResolvedValueOnce(
+			new Response(
+				JSON.stringify({
+					reviews: [
+						{
+							name: "accounts/1/locations/1/reviews/r",
+							reviewId: "r",
+							reviewer: { displayName: "X" },
+							starRating: "STAR_RATING_UNSPECIFIED",
+							createTime: "2026-01-01T00:00:00Z",
+							updateTime: "2026-01-01T00:00:00Z",
+						},
+					],
+				}),
+				{ status: 200 },
+			),
+		);
+
+		const result = await listReviews({
+			accessToken: "at",
+			locationName: "accounts/1/locations/1",
+		});
+		expect(result.isOk()).toBe(true);
+		if (result.isErr()) throw new Error("unreachable");
+		expect(result.value.reviews[0]?.rating).toBeNull();
+	});
+
+	it("returns gbp_legacy_api_access_denied when Google gates the endpoint", async () => {
+		vi.mocked(globalThis.fetch).mockResolvedValueOnce(
+			new Response(
+				JSON.stringify({
+					error: {
+						code: 403,
+						message:
+							"Google My Business API has not been used in project 123 before or it is disabled.",
+						status: "PERMISSION_DENIED",
+					},
+				}),
+				{ status: 403 },
+			),
+		);
+
+		const result = await listReviews({
+			accessToken: "at",
+			locationName: "accounts/1/locations/1",
+		});
+		expect(result.isErr()).toBe(true);
+		if (result.isOk()) throw new Error("unreachable");
+		expect(result.error.kind).toBe("gbp_legacy_api_access_denied");
+	});
+
+	it("returns empty page when Google's response has no reviews", async () => {
+		vi.mocked(globalThis.fetch).mockResolvedValueOnce(
+			new Response(JSON.stringify({ averageRating: 0, totalReviewCount: 0 }), {
+				status: 200,
+			}),
+		);
+
+		const result = await listReviews({
+			accessToken: "at",
+			locationName: "accounts/1/locations/1",
+		});
+		expect(result.isOk()).toBe(true);
+		if (result.isErr()) throw new Error("unreachable");
+		expect(result.value.reviews).toEqual([]);
+		expect(result.value.nextPageToken).toBeNull();
+		expect(result.value.totalReviewCount).toBe(0);
 	});
 });

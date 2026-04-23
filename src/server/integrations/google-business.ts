@@ -26,6 +26,14 @@ const ACCOUNT_MANAGEMENT_BASE =
 	"https://mybusinessaccountmanagement.googleapis.com/v1";
 const BUSINESS_INFORMATION_BASE =
 	"https://mybusinessbusinessinformation.googleapis.com/v1";
+const LEGACY_V4_BASE = "https://mybusiness.googleapis.com/v4";
+
+/**
+ * Reviews stay on the legacy v4 endpoint — Google hasn't migrated them to
+ * the split APIs yet, and access is gated behind the manual approval
+ * process (the `0-9780000040916` case). We keep the URL base separate so
+ * the distinction is obvious when we grep for legacy usage.
+ */
 
 /**
  * Fields we ask Google to return on `listLocations`. The endpoint requires
@@ -269,6 +277,160 @@ export async function listLocations(params: {
 			: null,
 	}));
 	return ok(locations);
+}
+
+/**
+ * Narrow view of a Business Profile review. Flattens Google's nested
+ * `reviewer` + `reviewReply` objects into top-level fields that map
+ * directly onto the columns in our `reviews` and `responses` tables.
+ */
+export type GbpReview = {
+	readonly name: string;
+	readonly reviewId: string;
+	readonly authorName: string;
+	readonly authorAvatarUrl: string | null;
+	readonly isAnonymous: boolean;
+	readonly rating: 1 | 2 | 3 | 4 | 5 | null;
+	readonly content: string;
+	readonly publishedAt: string;
+	readonly updatedAt: string;
+	readonly existingReply: {
+		readonly content: string;
+		readonly updatedAt: string;
+	} | null;
+};
+
+export type GbpReviewsPage = {
+	readonly reviews: readonly GbpReview[];
+	readonly nextPageToken: string | null;
+	readonly averageRating: number | null;
+	readonly totalReviewCount: number;
+};
+
+const STAR_RATING_TO_INT: Record<string, GbpReview["rating"]> = {
+	ONE: 1,
+	TWO: 2,
+	THREE: 3,
+	FOUR: 4,
+	FIVE: 5,
+	STAR_RATING_UNSPECIFIED: null,
+};
+
+const reviewerSchema = z.object({
+	displayName: z.string().min(1),
+	profilePhotoUrl: z.string().optional(),
+	isAnonymous: z.boolean().optional(),
+});
+
+const reviewReplySchema = z.object({
+	comment: z.string().min(1),
+	updateTime: z.string().min(1),
+});
+
+const reviewSchema = z.object({
+	name: z.string().min(1),
+	reviewId: z.string().min(1),
+	reviewer: reviewerSchema,
+	starRating: z.enum([
+		"ONE",
+		"TWO",
+		"THREE",
+		"FOUR",
+		"FIVE",
+		"STAR_RATING_UNSPECIFIED",
+	]),
+	comment: z.string().optional(),
+	createTime: z.string().min(1),
+	updateTime: z.string().min(1),
+	reviewReply: reviewReplySchema.optional(),
+});
+
+const listReviewsResponseSchema = z.object({
+	reviews: z.array(reviewSchema).optional(),
+	averageRating: z.number().optional(),
+	totalReviewCount: z.number().int().nonnegative().optional(),
+	nextPageToken: z.string().optional(),
+});
+
+/**
+ * GET a page of reviews for a Business Profile location. Uses the legacy
+ * v4 endpoint (`mybusiness.googleapis.com/v4`) — until Google moves reviews
+ * onto the split APIs, this is the only path. Access is gated on the
+ * approval request; calls before approval return 403 with "API not been
+ * used" or "accessNotConfigured", which the shared mapper translates to
+ * `gbp_legacy_api_access_denied`.
+ *
+ * Pagination is surfaced — the caller loops with `pageToken` until the
+ * function returns `nextPageToken: null`. 50 reviews per page is the
+ * documented Google max.
+ */
+export async function listReviews(params: {
+	accessToken: string;
+	locationName: string;
+	pageSize?: number;
+	pageToken?: string | undefined;
+}): Promise<Result<GbpReviewsPage, GbpError | IntegrationError>> {
+	const url = new URL(`${LEGACY_V4_BASE}/${params.locationName}/reviews`);
+	url.searchParams.set("pageSize", String(params.pageSize ?? 50));
+	if (params.pageToken) url.searchParams.set("pageToken", params.pageToken);
+
+	const responseResult = await fromPromise(
+		fetch(url.toString(), {
+			headers: { authorization: `Bearer ${params.accessToken}` },
+		}),
+		toNetworkError,
+	);
+	if (responseResult.isErr()) return err(responseResult.error);
+	const response = responseResult.value;
+
+	const bodyResult = await fromPromise(response.text(), toNetworkError);
+	if (bodyResult.isErr()) return err(bodyResult.error);
+	const rawBody = bodyResult.value;
+
+	if (!response.ok) {
+		return err(toGbpHttpError(response.status, rawBody));
+	}
+
+	const jsonResult = safeJsonParseText(rawBody);
+	if (jsonResult.isErr()) {
+		return err({
+			kind: "gbp_invalid_response",
+			issues: [{ path: [], message: "response body is not valid JSON" }],
+		});
+	}
+
+	const parsed = listReviewsResponseSchema.safeParse(jsonResult.value);
+	if (!parsed.success) {
+		return err({
+			kind: "gbp_invalid_response",
+			issues: zodIssuesToValidationIssues(parsed.error),
+		});
+	}
+
+	const reviews: GbpReview[] = (parsed.data.reviews ?? []).map((r) => ({
+		name: r.name,
+		reviewId: r.reviewId,
+		authorName: r.reviewer.displayName,
+		authorAvatarUrl: r.reviewer.profilePhotoUrl ?? null,
+		isAnonymous: r.reviewer.isAnonymous ?? false,
+		rating: STAR_RATING_TO_INT[r.starRating] ?? null,
+		content: r.comment ?? "",
+		publishedAt: r.createTime,
+		updatedAt: r.updateTime,
+		existingReply: r.reviewReply
+			? {
+					content: r.reviewReply.comment,
+					updatedAt: r.reviewReply.updateTime,
+				}
+			: null,
+	}));
+
+	return ok({
+		reviews,
+		nextPageToken: parsed.data.nextPageToken ?? null,
+		averageRating: parsed.data.averageRating ?? null,
+		totalReviewCount: parsed.data.totalReviewCount ?? 0,
+	});
 }
 
 /**
