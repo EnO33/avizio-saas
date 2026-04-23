@@ -1,6 +1,7 @@
 import type {
 	OrganizationJSON,
 	OrganizationMembershipJSON,
+	SessionWebhookEvent,
 	UserJSON,
 } from "@clerk/backend";
 import type {
@@ -8,6 +9,10 @@ import type {
 	NewOrganizationMembership,
 	NewUser,
 } from "../db/schema";
+
+// `SessionWebhookEventJSON` isn't re-exported from `@clerk/backend` — derive
+// it from the event's `data` field.
+type SessionWebhookEventJSON = SessionWebhookEvent["data"];
 
 const TRIAL_DURATION_MS = 14 * 24 * 60 * 60 * 1000;
 
@@ -54,5 +59,19 @@ export function organizationMembershipJsonToRow(
 		organizationId: mem.organization.id,
 		userId: mem.public_user_data.user_id,
 		role: mem.role,
+	};
+}
+
+export type UserSignInUpdate = {
+	readonly userId: string;
+	readonly lastSignInAt: Date;
+};
+
+export function sessionJsonToUserSignIn(
+	session: SessionWebhookEventJSON,
+): UserSignInUpdate {
+	return {
+		userId: session.user_id,
+		lastSignInAt: new Date(session.created_at),
 	};
 }
