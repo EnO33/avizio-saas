@@ -138,6 +138,29 @@ describe("listAccounts", () => {
 		expect(result.error.kind).toBe("gbp_legacy_api_access_denied");
 	});
 
+	it("treats any other 403 as insufficient_scope (pragmatic default)", async () => {
+		// Google's 403 phrasings vary across endpoints: "PERMISSION_DENIED",
+		// "The caller does not have permission", etc. For the new APIs the
+		// overwhelmingly common cause is a token missing business.manage.
+		vi.mocked(globalThis.fetch).mockResolvedValueOnce(
+			new Response(
+				JSON.stringify({
+					error: {
+						code: 403,
+						message: "The caller does not have permission",
+						status: "PERMISSION_DENIED",
+					},
+				}),
+				{ status: 403 },
+			),
+		);
+
+		const result = await listAccounts("at");
+		expect(result.isErr()).toBe(true);
+		if (result.isOk()) throw new Error("unreachable");
+		expect(result.error.kind).toBe("gbp_insufficient_scope");
+	});
+
 	it("returns integration_rate_limited on HTTP 429", async () => {
 		vi.mocked(globalThis.fetch).mockResolvedValueOnce(
 			new Response("slow down", { status: 429 }),

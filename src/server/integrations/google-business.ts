@@ -88,11 +88,19 @@ function toNetworkError(e: unknown): IntegrationError {
 }
 
 /**
- * Map a non-2xx Business Profile response into a discriminated error. The
- * two cases we peel from `403` are the ones the caller specifically cares
- * about — scope not granted (waiting on Google approval of business.manage)
- * and legacy-v4 API access denied (the reviews gate). Everything else falls
- * through to `gbp_http_error` with the raw status + body.
+ * Map a non-2xx Business Profile response into a discriminated error.
+ *
+ * 403 mapping hierarchy:
+ *  1. Body mentions the API-not-enabled / accessNotConfigured pattern →
+ *     `gbp_legacy_api_access_denied` (reviews gate)
+ *  2. Any other 403 → `gbp_insufficient_scope`
+ *
+ * The blanket "403 = insufficient scope" fallback is pragmatic: the Business
+ * Profile APIs almost exclusively use 403 to signal missing `business.manage`,
+ * and the specific phrasing varies by endpoint ("Request had insufficient
+ * authentication scopes", "PERMISSION_DENIED", "The caller does not have
+ * permission", etc.). Keeping a narrow keyword match made the fallback trip
+ * into the generic "something went wrong" UI for the most common case.
  */
 function toGbpHttpError(
 	status: number,
@@ -109,9 +117,6 @@ function toGbpHttpError(
 		};
 	}
 	if (status === 403) {
-		if (body.includes("insufficient") && body.includes("scope")) {
-			return { kind: "gbp_insufficient_scope", grantedScopes: [] };
-		}
 		if (
 			body.includes("accessNotConfigured") ||
 			body.includes("API_NOT_ENABLED") ||
@@ -119,6 +124,7 @@ function toGbpHttpError(
 		) {
 			return { kind: "gbp_legacy_api_access_denied" };
 		}
+		return { kind: "gbp_insufficient_scope", grantedScopes: [] };
 	}
 	return { kind: "gbp_http_error", status, body };
 }
