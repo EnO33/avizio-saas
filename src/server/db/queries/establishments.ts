@@ -266,13 +266,15 @@ export async function unlinkEstablishmentGoogleLocation(params: {
 export type LinkedEstablishment = {
 	readonly id: string;
 	readonly googleLocationName: string;
+	readonly languageCode: string;
 };
 
 /**
  * Pull every establishment in the org that has been linked to a Google
  * Business Profile location. Used by the review-fetch cron to know which
  * establishments to sync. Ignores rows where `google_location_name` is
- * null — those haven't been mapped by the user yet.
+ * null — those haven't been mapped by the user yet. `languageCode` comes
+ * along so the review-import pipeline can stamp it on each imported row.
  */
 export async function listEstablishmentsWithGoogleLink(
 	organizationId: string,
@@ -282,6 +284,7 @@ export async function listEstablishmentsWithGoogleLink(
 			.select({
 				id: establishments.id,
 				googleLocationName: establishments.googleLocationName,
+				languageCode: establishments.languageCode,
 			})
 			.from(establishments)
 			.where(
@@ -302,6 +305,7 @@ export async function listEstablishmentsWithGoogleLink(
 			linked.push({
 				id: row.id,
 				googleLocationName: row.googleLocationName,
+				languageCode: row.languageCode,
 			});
 		}
 	}
