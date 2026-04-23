@@ -1,7 +1,15 @@
 import pino, { type LoggerOptions } from "pino";
 import { env } from "./env";
 
-const isDev = env.NODE_ENV === "development";
+// `import.meta.env.DEV` is a Vite build-time constant. In a prod build it
+// is replaced literally by `false`, so the `pino-pretty` branch (and its
+// import) is dead-code-eliminated — no transport target shipped to prod,
+// and no runtime dependency on a devDep that isn't bundled.
+//
+// Do NOT use `env.NODE_ENV === "development"` here: that's a runtime check,
+// which means the prod bundle still references `pino-pretty` transport,
+// and Vercel crashes with `unable to determine transport target`.
+const isDev = import.meta.env.DEV;
 
 const redactPaths = [
 	"password",
