@@ -5,8 +5,10 @@ import { EnsureActiveOrganization } from "#/components/auth/ensure-active-organi
 import { ConnectGoogleButton } from "#/components/connections/connect-google-button";
 import { ConnectionsList } from "#/components/connections/connections-list";
 import { OAuthResultBanner } from "#/components/connections/oauth-result-banner";
+import { EstablishmentsSummaryCard } from "#/components/establishments/establishments-summary-card";
 import { ReviewsSummaryCard } from "#/components/reviews/reviews-summary-card";
 import { listConnections } from "#/server/fns/connections";
+import { listEstablishments } from "#/server/fns/establishments";
 import { countReviewsByStatus } from "#/server/fns/reviews";
 
 const dashboardSearchSchema = z.object({
@@ -17,18 +19,19 @@ const dashboardSearchSchema = z.object({
 export const Route = createFileRoute("/_authed/dashboard")({
 	validateSearch: dashboardSearchSchema,
 	loader: async () => {
-		const [connections, reviewCounts] = await Promise.all([
+		const [connections, reviewCounts, establishments] = await Promise.all([
 			listConnections(),
 			countReviewsByStatus(),
+			listEstablishments(),
 		]);
-		return { connections, reviewCounts };
+		return { connections, reviewCounts, establishments };
 	},
 	component: Dashboard,
 });
 
 function Dashboard() {
 	const { userId, orgId } = Route.useRouteContext();
-	const { connections, reviewCounts } = Route.useLoaderData();
+	const { connections, reviewCounts, establishments } = Route.useLoaderData();
 	const { connected, error } = Route.useSearch();
 
 	const hasGoogleConnection = connections.some((c) => c.platform === "google");
@@ -64,6 +67,10 @@ function Dashboard() {
 					)}
 				</p>
 			</section>
+
+			{orgId ? (
+				<EstablishmentsSummaryCard count={establishments.length} />
+			) : null}
 
 			{orgId ? <ReviewsSummaryCard counts={reviewCounts} /> : null}
 
