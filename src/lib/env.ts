@@ -44,6 +44,18 @@ const envSchema = z
 		CLERK_WEBHOOK_SECRET: z.string().startsWith("whsec_"),
 		ENCRYPTION_KEYS_JSON: encryptionKeysJsonField,
 		ENCRYPTION_KEY_CURRENT: z.string().regex(/^v\d+$/, "must match v<number>"),
+		GOOGLE_OAUTH_CLIENT_ID: z
+			.string()
+			.endsWith(".apps.googleusercontent.com")
+			.describe("OAuth 2.0 Client ID from Google Cloud Console"),
+		GOOGLE_OAUTH_CLIENT_SECRET: z
+			.string()
+			.startsWith("GOCSPX-")
+			.describe("OAuth 2.0 Client secret from Google Cloud Console"),
+		OAUTH_STATE_SECRET: z
+			.string()
+			.min(32, "OAUTH_STATE_SECRET must be at least 32 characters")
+			.describe("HMAC key used to sign/verify the OAuth `state` parameter"),
 	})
 	.refine((data) => data.ENCRYPTION_KEY_CURRENT in data.ENCRYPTION_KEYS_JSON, {
 		message:
