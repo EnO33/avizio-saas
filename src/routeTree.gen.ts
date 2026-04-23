@@ -15,10 +15,11 @@ import { Route as SignInRouteImport } from './routes/sign-in'
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as AuthedRouteImport } from './routes/_authed'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as AuthedReviewsRouteImport } from './routes/_authed/reviews'
 import { Route as AuthedDashboardRouteImport } from './routes/_authed/dashboard'
+import { Route as AuthedReviewsIndexRouteImport } from './routes/_authed/reviews/index'
 import { Route as AuthedEstablishmentsIndexRouteImport } from './routes/_authed/establishments/index'
 import { Route as ApiWebhooksClerkRouteImport } from './routes/api/webhooks/clerk'
+import { Route as AuthedReviewsIdRouteImport } from './routes/_authed/reviews/$id'
 import { Route as AuthedEstablishmentsNewRouteImport } from './routes/_authed/establishments/new'
 import { Route as AuthedEstablishmentsIdRouteImport } from './routes/_authed/establishments/$id'
 import { Route as ApiOauthGoogleCallbackRouteImport } from './routes/api/oauth/google/callback'
@@ -52,14 +53,14 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthedReviewsRoute = AuthedReviewsRouteImport.update({
-  id: '/reviews',
-  path: '/reviews',
-  getParentRoute: () => AuthedRoute,
-} as any)
 const AuthedDashboardRoute = AuthedDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedReviewsIndexRoute = AuthedReviewsIndexRouteImport.update({
+  id: '/reviews/',
+  path: '/reviews/',
   getParentRoute: () => AuthedRoute,
 } as any)
 const AuthedEstablishmentsIndexRoute =
@@ -72,6 +73,11 @@ const ApiWebhooksClerkRoute = ApiWebhooksClerkRouteImport.update({
   id: '/api/webhooks/clerk',
   path: '/api/webhooks/clerk',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AuthedReviewsIdRoute = AuthedReviewsIdRouteImport.update({
+  id: '/reviews/$id',
+  path: '/reviews/$id',
+  getParentRoute: () => AuthedRoute,
 } as any)
 const AuthedEstablishmentsNewRoute = AuthedEstablishmentsNewRouteImport.update({
   id: '/establishments/new',
@@ -96,11 +102,12 @@ export interface FileRoutesByFullPath {
   '/sign-up': typeof SignUpRoute
   '/sso-callback': typeof SsoCallbackRoute
   '/dashboard': typeof AuthedDashboardRoute
-  '/reviews': typeof AuthedReviewsRoute
   '/establishments/$id': typeof AuthedEstablishmentsIdRoute
   '/establishments/new': typeof AuthedEstablishmentsNewRoute
+  '/reviews/$id': typeof AuthedReviewsIdRoute
   '/api/webhooks/clerk': typeof ApiWebhooksClerkRoute
   '/establishments/': typeof AuthedEstablishmentsIndexRoute
+  '/reviews/': typeof AuthedReviewsIndexRoute
   '/api/oauth/google/callback': typeof ApiOauthGoogleCallbackRoute
 }
 export interface FileRoutesByTo {
@@ -110,11 +117,12 @@ export interface FileRoutesByTo {
   '/sign-up': typeof SignUpRoute
   '/sso-callback': typeof SsoCallbackRoute
   '/dashboard': typeof AuthedDashboardRoute
-  '/reviews': typeof AuthedReviewsRoute
   '/establishments/$id': typeof AuthedEstablishmentsIdRoute
   '/establishments/new': typeof AuthedEstablishmentsNewRoute
+  '/reviews/$id': typeof AuthedReviewsIdRoute
   '/api/webhooks/clerk': typeof ApiWebhooksClerkRoute
   '/establishments': typeof AuthedEstablishmentsIndexRoute
+  '/reviews': typeof AuthedReviewsIndexRoute
   '/api/oauth/google/callback': typeof ApiOauthGoogleCallbackRoute
 }
 export interface FileRoutesById {
@@ -126,11 +134,12 @@ export interface FileRoutesById {
   '/sign-up': typeof SignUpRoute
   '/sso-callback': typeof SsoCallbackRoute
   '/_authed/dashboard': typeof AuthedDashboardRoute
-  '/_authed/reviews': typeof AuthedReviewsRoute
   '/_authed/establishments/$id': typeof AuthedEstablishmentsIdRoute
   '/_authed/establishments/new': typeof AuthedEstablishmentsNewRoute
+  '/_authed/reviews/$id': typeof AuthedReviewsIdRoute
   '/api/webhooks/clerk': typeof ApiWebhooksClerkRoute
   '/_authed/establishments/': typeof AuthedEstablishmentsIndexRoute
+  '/_authed/reviews/': typeof AuthedReviewsIndexRoute
   '/api/oauth/google/callback': typeof ApiOauthGoogleCallbackRoute
 }
 export interface FileRouteTypes {
@@ -142,11 +151,12 @@ export interface FileRouteTypes {
     | '/sign-up'
     | '/sso-callback'
     | '/dashboard'
-    | '/reviews'
     | '/establishments/$id'
     | '/establishments/new'
+    | '/reviews/$id'
     | '/api/webhooks/clerk'
     | '/establishments/'
+    | '/reviews/'
     | '/api/oauth/google/callback'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -156,11 +166,12 @@ export interface FileRouteTypes {
     | '/sign-up'
     | '/sso-callback'
     | '/dashboard'
-    | '/reviews'
     | '/establishments/$id'
     | '/establishments/new'
+    | '/reviews/$id'
     | '/api/webhooks/clerk'
     | '/establishments'
+    | '/reviews'
     | '/api/oauth/google/callback'
   id:
     | '__root__'
@@ -171,11 +182,12 @@ export interface FileRouteTypes {
     | '/sign-up'
     | '/sso-callback'
     | '/_authed/dashboard'
-    | '/_authed/reviews'
     | '/_authed/establishments/$id'
     | '/_authed/establishments/new'
+    | '/_authed/reviews/$id'
     | '/api/webhooks/clerk'
     | '/_authed/establishments/'
+    | '/_authed/reviews/'
     | '/api/oauth/google/callback'
   fileRoutesById: FileRoutesById
 }
@@ -234,18 +246,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_authed/reviews': {
-      id: '/_authed/reviews'
-      path: '/reviews'
-      fullPath: '/reviews'
-      preLoaderRoute: typeof AuthedReviewsRouteImport
-      parentRoute: typeof AuthedRoute
-    }
     '/_authed/dashboard': {
       id: '/_authed/dashboard'
       path: '/dashboard'
       fullPath: '/dashboard'
       preLoaderRoute: typeof AuthedDashboardRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/reviews/': {
+      id: '/_authed/reviews/'
+      path: '/reviews'
+      fullPath: '/reviews/'
+      preLoaderRoute: typeof AuthedReviewsIndexRouteImport
       parentRoute: typeof AuthedRoute
     }
     '/_authed/establishments/': {
@@ -261,6 +273,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/api/webhooks/clerk'
       preLoaderRoute: typeof ApiWebhooksClerkRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_authed/reviews/$id': {
+      id: '/_authed/reviews/$id'
+      path: '/reviews/$id'
+      fullPath: '/reviews/$id'
+      preLoaderRoute: typeof AuthedReviewsIdRouteImport
+      parentRoute: typeof AuthedRoute
     }
     '/_authed/establishments/new': {
       id: '/_authed/establishments/new'
@@ -288,18 +307,20 @@ declare module '@tanstack/react-router' {
 
 interface AuthedRouteChildren {
   AuthedDashboardRoute: typeof AuthedDashboardRoute
-  AuthedReviewsRoute: typeof AuthedReviewsRoute
   AuthedEstablishmentsIdRoute: typeof AuthedEstablishmentsIdRoute
   AuthedEstablishmentsNewRoute: typeof AuthedEstablishmentsNewRoute
+  AuthedReviewsIdRoute: typeof AuthedReviewsIdRoute
   AuthedEstablishmentsIndexRoute: typeof AuthedEstablishmentsIndexRoute
+  AuthedReviewsIndexRoute: typeof AuthedReviewsIndexRoute
 }
 
 const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedDashboardRoute: AuthedDashboardRoute,
-  AuthedReviewsRoute: AuthedReviewsRoute,
   AuthedEstablishmentsIdRoute: AuthedEstablishmentsIdRoute,
   AuthedEstablishmentsNewRoute: AuthedEstablishmentsNewRoute,
+  AuthedReviewsIdRoute: AuthedReviewsIdRoute,
   AuthedEstablishmentsIndexRoute: AuthedEstablishmentsIndexRoute,
+  AuthedReviewsIndexRoute: AuthedReviewsIndexRoute,
 }
 
 const AuthedRouteWithChildren =

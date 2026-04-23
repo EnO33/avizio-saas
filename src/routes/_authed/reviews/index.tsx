@@ -4,7 +4,7 @@ import { ReviewsTable } from "#/components/reviews/reviews-table";
 import { listConnections } from "#/server/fns/connections";
 import { listReviews } from "#/server/fns/reviews";
 
-export const Route = createFileRoute("/_authed/reviews")({
+export const Route = createFileRoute("/_authed/reviews/")({
 	loader: async () => {
 		const [reviews, connections] = await Promise.all([
 			listReviews(),
