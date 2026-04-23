@@ -64,6 +64,25 @@ export type IntegrationError =
 			readonly issues: readonly ValidationIssue[];
 	  };
 
+export type OAuthError =
+	| { readonly kind: "oauth_state_invalid_format" }
+	| { readonly kind: "oauth_state_signature_mismatch" }
+	| { readonly kind: "oauth_state_expired" }
+	| { readonly kind: "oauth_state_payload_invalid" }
+	| { readonly kind: "oauth_callback_missing_code" }
+	| { readonly kind: "oauth_callback_missing_state" }
+	| { readonly kind: "oauth_callback_user_denied"; readonly reason: string }
+	| {
+			readonly kind: "oauth_token_exchange_failed";
+			readonly status: number;
+			readonly body: string;
+	  }
+	| {
+			readonly kind: "oauth_token_exchange_invalid_response";
+			readonly issues: readonly ValidationIssue[];
+	  }
+	| { readonly kind: "oauth_id_token_invalid" };
+
 export type UnknownError = {
 	readonly kind: "unknown";
 	readonly message: string;
