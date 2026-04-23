@@ -1,6 +1,7 @@
 import { OrganizationSwitcher, UserButton } from "@clerk/tanstack-react-start";
 import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
+import { EnsureActiveOrganization } from "#/components/auth/ensure-active-organization";
 import { ConnectGoogleButton } from "#/components/connections/connect-google-button";
 import { OAuthResultBanner } from "#/components/connections/oauth-result-banner";
 
@@ -34,18 +35,7 @@ function Dashboard() {
 
 			<OAuthResultBanner connected={connected} error={error} />
 
-			{!orgId ? (
-				<section className="rounded-lg border border-amber-200 bg-amber-50 p-6">
-					<h2 className="font-semibold text-amber-900">
-						Crée ton organisation pour continuer
-					</h2>
-					<p className="mt-1 text-amber-800 text-sm">
-						Une organisation regroupe tes établissements, tes intégrations et
-						ton équipe. Clique sur le sélecteur en haut à droite et choisis{" "}
-						<em>Create organization</em>.
-					</p>
-				</section>
-			) : null}
+			{!orgId ? <EnsureActiveOrganization /> : null}
 
 			<section className="rounded-lg border border-neutral-200 p-6">
 				<p className="text-neutral-600 text-sm">
