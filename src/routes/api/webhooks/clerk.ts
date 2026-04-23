@@ -10,6 +10,7 @@ import {
 	handleMembershipUpsert,
 	handleOrganizationDelete,
 	handleOrganizationUpsert,
+	handleSessionCreated,
 	handleUnknownEvent,
 	handleUserDelete,
 	handleUserUpsert,
@@ -61,6 +62,9 @@ export const Route = createFileRoute("/api/webhooks/clerk")({
 					)
 					.with({ type: "organizationMembership.deleted" }, ({ data }) =>
 						handleMembershipDelete(data.id),
+					)
+					.with({ type: "session.created" }, ({ data }) =>
+						handleSessionCreated(data),
 					)
 					.otherwise(() => handleUnknownEvent());
 
