@@ -70,6 +70,62 @@ export const organizations = pgTable("organizations", {
 		.defaultNow(),
 });
 
+// ─── Users (mirror of Clerk users) ────────────────────────────────────────
+
+export const users = pgTable(
+	"users",
+	{
+		id: text("id").primaryKey(), // Clerk user id (user_xxx)
+		email: text("email").notNull(),
+		emailVerified: boolean("email_verified").notNull().default(false),
+		firstName: text("first_name"),
+		lastName: text("last_name"),
+		imageUrl: text("image_url"),
+		lastSignInAt: timestamp("last_sign_in_at", { withTimezone: true }),
+		createdAt: timestamp("created_at", { withTimezone: true })
+			.notNull()
+			.defaultNow(),
+		updatedAt: timestamp("updated_at", { withTimezone: true })
+			.notNull()
+			.defaultNow(),
+	},
+	(t) => ({
+		emailIdx: uniqueIndex("users_email_unique").on(t.email),
+	}),
+);
+
+// ─── Organization memberships (user × organization × role) ────────────────
+
+export const organizationMemberships = pgTable(
+	"organization_memberships",
+	{
+		id: text("id").primaryKey(), // Clerk membership id (orgmem_xxx)
+		organizationId: text("organization_id")
+			.notNull()
+			.references(() => organizations.id, { onDelete: "cascade" }),
+		userId: text("user_id")
+			.notNull()
+			.references(() => users.id, { onDelete: "cascade" }),
+		// Clerk role string, e.g. "org:admin", "org:member", or a custom role
+		// configured in the Clerk dashboard. Free-form text on purpose.
+		role: text("role").notNull(),
+		createdAt: timestamp("created_at", { withTimezone: true })
+			.notNull()
+			.defaultNow(),
+		updatedAt: timestamp("updated_at", { withTimezone: true })
+			.notNull()
+			.defaultNow(),
+	},
+	(t) => ({
+		uniqueMembership: uniqueIndex("org_memberships_unique").on(
+			t.organizationId,
+			t.userId,
+		),
+		userIdx: index("org_memberships_user_idx").on(t.userId),
+		orgIdx: index("org_memberships_org_idx").on(t.organizationId),
+	}),
+);
+
 // ─── Establishments ───────────────────────────────────────────────────────
 
 export const establishments = pgTable(
@@ -246,7 +302,26 @@ export const auditLog = pgTable(
 
 export const organizationsRelations = relations(organizations, ({ many }) => ({
 	establishments: many(establishments),
+	memberships: many(organizationMemberships),
 }));
+
+export const usersRelations = relations(users, ({ many }) => ({
+	memberships: many(organizationMemberships),
+}));
+
+export const organizationMembershipsRelations = relations(
+	organizationMemberships,
+	({ one }) => ({
+		organization: one(organizations, {
+			fields: [organizationMemberships.organizationId],
+			references: [organizations.id],
+		}),
+		user: one(users, {
+			fields: [organizationMemberships.userId],
+			references: [users.id],
+		}),
+	}),
+);
 
 export const establishmentsRelations = relations(
 	establishments,
@@ -286,6 +361,14 @@ export const responsesRelations = relations(responses, ({ one }) => ({
 
 export type Organization = typeof organizations.$inferSelect;
 export type NewOrganization = typeof organizations.$inferInsert;
+
+export type User = typeof users.$inferSelect;
+export type NewUser = typeof users.$inferInsert;
+
+export type OrganizationMembership =
+	typeof organizationMemberships.$inferSelect;
+export type NewOrganizationMembership =
+	typeof organizationMemberships.$inferInsert;
 
 export type Establishment = typeof establishments.$inferSelect;
 export type NewEstablishment = typeof establishments.$inferInsert;
