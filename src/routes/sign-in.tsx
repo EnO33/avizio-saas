@@ -5,6 +5,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { AuthLayout } from "#/components/auth/auth-layout";
 import { clerkErrorToMessage } from "#/components/auth/clerk-error";
+import { Divider } from "#/components/auth/divider";
 import { GoogleButton } from "#/components/auth/google-button";
 import { TextField } from "#/components/auth/text-field";
 
@@ -138,17 +139,5 @@ function SignInPage() {
 				</form>
 			</div>
 		</AuthLayout>
-	);
-}
-
-function Divider() {
-	return (
-		<div className="flex items-center gap-3">
-			<div className="h-px flex-1 bg-neutral-200" />
-			<span className="text-neutral-500 text-xs uppercase tracking-wide">
-				ou
-			</span>
-			<div className="h-px flex-1 bg-neutral-200" />
-		</div>
 	);
 }
