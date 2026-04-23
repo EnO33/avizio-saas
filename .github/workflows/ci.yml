@@ -28,6 +28,8 @@ jobs:
       GOOGLE_OAUTH_CLIENT_ID: ci-dummy.apps.googleusercontent.com
       GOOGLE_OAUTH_CLIENT_SECRET: GOCSPX-ci-dummy-secret
       OAUTH_STATE_SECRET: ci-dummy-state-secret-32-chars-minimum-placeholder
+      # Dummy Anthropic key — only the sk-ant- prefix is checked for CI parsing.
+      ANTHROPIC_API_KEY: sk-ant-ci-dummy
       NODE_ENV: test
     steps:
       - name: Checkout
