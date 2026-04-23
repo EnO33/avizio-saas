@@ -76,11 +76,25 @@ function SignInPage() {
 
 	const onGoogle = async () => {
 		form.clearErrors("root");
-		await signIn.sso({
-			strategy: "oauth_google",
-			redirectCallbackUrl: "/sso-callback",
-			redirectUrl: "/sign-in",
-		});
+		// `signIn.sso()` redirects the browser on success; a rejected promise
+		// means the SDK couldn't start the flow (stale session, network, etc.).
+		// Without this catch the error vanishes into an unhandled rejection and
+		// the button looks inert — biome allows try/catch at this
+		// external-lib boundary.
+		try {
+			await signIn.sso({
+				strategy: "oauth_google",
+				redirectCallbackUrl: "/sso-callback",
+				redirectUrl: "/sign-in",
+			});
+		} catch (e) {
+			form.setError("root", {
+				message: clerkErrorToMessage(
+					e,
+					"Connexion Google indisponible. Réessaie dans un instant ou utilise l'email.",
+				),
+			});
+		}
 	};
 
 	return (
