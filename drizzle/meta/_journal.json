@@ -22,6 +22,13 @@
       "when": 1776935354099,
       "tag": "0002_connections_organization_scope",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1776949578171,
+      "tag": "0003_establishments_google_location",
+      "breakpoints": true
     }
   ]
 }
