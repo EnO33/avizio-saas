@@ -3,7 +3,9 @@ import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
 import { EnsureActiveOrganization } from "#/components/auth/ensure-active-organization";
 import { ConnectGoogleButton } from "#/components/connections/connect-google-button";
+import { ConnectionsList } from "#/components/connections/connections-list";
 import { OAuthResultBanner } from "#/components/connections/oauth-result-banner";
+import { listConnections } from "#/server/fns/connections";
 
 const dashboardSearchSchema = z.object({
 	connected: z.enum(["google"]).optional(),
@@ -12,12 +14,16 @@ const dashboardSearchSchema = z.object({
 
 export const Route = createFileRoute("/_authed/dashboard")({
 	validateSearch: dashboardSearchSchema,
+	loader: async () => ({ connections: await listConnections() }),
 	component: Dashboard,
 });
 
 function Dashboard() {
 	const { userId, orgId } = Route.useRouteContext();
+	const { connections } = Route.useLoaderData();
 	const { connected, error } = Route.useSearch();
+
+	const hasGoogleConnection = connections.some((c) => c.platform === "google");
 
 	return (
 		<main className="mx-auto max-w-5xl space-y-6 p-8">
@@ -62,7 +68,8 @@ function Dashboard() {
 							Connecte tes plateformes pour commencer à collecter les avis.
 						</p>
 					</div>
-					<ConnectGoogleButton />
+					<ConnectionsList connections={connections} />
+					{!hasGoogleConnection ? <ConnectGoogleButton /> : null}
 				</section>
 			) : null}
 		</main>
