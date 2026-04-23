@@ -6,6 +6,8 @@ import {
 	exchangeCodeForTokens,
 	GOOGLE_OAUTH_SCOPES,
 	type GoogleIdTokenClaims,
+	isRefreshTokenRevoked,
+	refreshAccessToken,
 	revokeGoogleToken,
 } from "./google-business-oauth";
 
@@ -308,5 +310,144 @@ describe("revokeGoogleToken", () => {
 		expect(result.isErr()).toBe(true);
 		if (result.isOk()) throw new Error("unreachable");
 		expect(result.error.kind).toBe("integration_network");
+	});
+});
+
+// ── refreshAccessToken ─────────────────────────────────────────────────────
+
+describe("refreshAccessToken", () => {
+	beforeEach(() => {
+		vi.spyOn(globalThis, "fetch");
+	});
+	afterEach(() => {
+		vi.restoreAllMocks();
+	});
+
+	it("POSTs form-encoded credentials with grant_type=refresh_token", async () => {
+		const fetchMock = vi.mocked(globalThis.fetch);
+		fetchMock.mockResolvedValueOnce(
+			jsonResponse({
+				access_token: "new-at",
+				expires_in: 3599,
+				scope: GOOGLE_OAUTH_SCOPES.join(" "),
+				token_type: "Bearer",
+			}),
+		);
+
+		const result = await refreshAccessToken({ refreshToken: "old-rt" });
+		expect(result.isOk()).toBe(true);
+
+		const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+		expect(url).toBe("https://oauth2.googleapis.com/token");
+		expect(init.method).toBe("POST");
+		const body = new URLSearchParams(init.body as string);
+		expect(body.get("grant_type")).toBe("refresh_token");
+		expect(body.get("refresh_token")).toBe("old-rt");
+		expect(body.get("client_id")).toBe(env.GOOGLE_OAUTH_CLIENT_ID);
+		expect(body.get("client_secret")).toBe(env.GOOGLE_OAUTH_CLIENT_SECRET);
+	});
+
+	it("returns the parsed response when Google omits a new refresh_token", async () => {
+		vi.mocked(globalThis.fetch).mockResolvedValueOnce(
+			jsonResponse({
+				access_token: "new-at",
+				expires_in: 3599,
+				scope: "openid email profile",
+				token_type: "Bearer",
+			}),
+		);
+
+		const result = await refreshAccessToken({ refreshToken: "rt" });
+		expect(result.isOk()).toBe(true);
+		if (result.isErr()) throw new Error("unreachable");
+		expect(result.value.access_token).toBe("new-at");
+		expect(result.value.refresh_token).toBeUndefined();
+	});
+
+	it("preserves a rotated refresh_token when Google returns one", async () => {
+		vi.mocked(globalThis.fetch).mockResolvedValueOnce(
+			jsonResponse({
+				access_token: "new-at",
+				expires_in: 3599,
+				refresh_token: "rotated-rt",
+				scope: "openid email profile",
+				token_type: "Bearer",
+			}),
+		);
+
+		const result = await refreshAccessToken({ refreshToken: "rt" });
+		expect(result.isOk()).toBe(true);
+		if (result.isErr()) throw new Error("unreachable");
+		expect(result.value.refresh_token).toBe("rotated-rt");
+	});
+
+	it("returns oauth_token_exchange_failed on HTTP 400 with invalid_grant", async () => {
+		vi.mocked(globalThis.fetch).mockResolvedValueOnce(
+			new Response(JSON.stringify({ error: "invalid_grant" }), { status: 400 }),
+		);
+
+		const result = await refreshAccessToken({ refreshToken: "revoked" });
+		expect(result.isErr()).toBe(true);
+		if (result.isOk()) throw new Error("unreachable");
+		expect(result.error.kind).toBe("oauth_token_exchange_failed");
+		expect(isRefreshTokenRevoked(result.error)).toBe(true);
+	});
+
+	it("returns oauth_token_exchange_failed on other HTTP errors", async () => {
+		vi.mocked(globalThis.fetch).mockResolvedValueOnce(
+			new Response("server error", { status: 500 }),
+		);
+
+		const result = await refreshAccessToken({ refreshToken: "x" });
+		expect(result.isErr()).toBe(true);
+		if (result.isOk()) throw new Error("unreachable");
+		expect(result.error.kind).toBe("oauth_token_exchange_failed");
+		expect(isRefreshTokenRevoked(result.error)).toBe(false);
+	});
+
+	it("returns invalid_response when the body is malformed", async () => {
+		vi.mocked(globalThis.fetch).mockResolvedValueOnce(
+			new Response("<html>oops</html>", { status: 200 }),
+		);
+
+		const result = await refreshAccessToken({ refreshToken: "x" });
+		expect(result.isErr()).toBe(true);
+		if (result.isOk()) throw new Error("unreachable");
+		expect(result.error.kind).toBe("oauth_token_exchange_invalid_response");
+	});
+
+	it("returns integration_network on fetch rejection", async () => {
+		vi.mocked(globalThis.fetch).mockRejectedValueOnce(new Error("ENETDOWN"));
+
+		const result = await refreshAccessToken({ refreshToken: "x" });
+		expect(result.isErr()).toBe(true);
+		if (result.isOk()) throw new Error("unreachable");
+		expect(result.error.kind).toBe("integration_network");
+	});
+});
+
+describe("isRefreshTokenRevoked", () => {
+	it("returns true for 400 + invalid_grant body", () => {
+		const error = {
+			kind: "oauth_token_exchange_failed",
+			status: 400,
+			body: '{"error":"invalid_grant"}',
+		} as const;
+		expect(isRefreshTokenRevoked(error)).toBe(true);
+	});
+
+	it("returns false for 400 without invalid_grant", () => {
+		const error = {
+			kind: "oauth_token_exchange_failed",
+			status: 400,
+			body: '{"error":"invalid_request"}',
+		} as const;
+		expect(isRefreshTokenRevoked(error)).toBe(false);
+	});
+
+	it("returns false for non-token-exchange errors", () => {
+		expect(isRefreshTokenRevoked({ kind: "oauth_id_token_invalid" })).toBe(
+			false,
+		);
 	});
 });
