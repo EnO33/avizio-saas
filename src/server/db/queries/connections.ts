@@ -48,6 +48,23 @@ export type ConnectionTokens = {
 };
 
 /**
+ * Server-only full view of an active connection with everything the token
+ * accessor (refresh-if-expired) needs. Includes scopes so callers can detect
+ * "business.manage not granted yet" before attempting a call that'll 403.
+ */
+export type ActiveConnection = {
+	readonly id: string;
+	readonly organizationId: string;
+	readonly platform: "google" | "tripadvisor" | "trustpilot" | "thefork";
+	readonly platformAccountId: string;
+	readonly platformAccountLabel: string | null;
+	readonly encryptedAccessToken: string;
+	readonly encryptedRefreshToken: string | null;
+	readonly accessTokenExpiresAt: Date | null;
+	readonly scopes: readonly string[] | null;
+};
+
+/**
  * Fetch the encrypted tokens for a connection, scoped to its organization.
  * Returns `db_not_found` if the id doesn't exist, doesn't belong to the org,
  * or the connection is already revoked.
@@ -78,6 +95,86 @@ export async function getConnectionForRevoke(params: {
 	const first = rows.value[0];
 	if (!first) return err({ kind: "db_not_found" });
 	return ok(first);
+}
+
+/**
+ * Fetch the active connection (access+refresh tokens, scopes, expiry) for an
+ * (organization, platform) pair. Used by the token accessor before any GBP
+ * API call. Returns `db_not_found` if no active connection exists — the
+ * caller typically falls back to "user must connect" UX.
+ */
+export async function getActiveConnection(params: {
+	organizationId: string;
+	platform: "google" | "tripadvisor" | "trustpilot" | "thefork";
+}): Promise<Result<ActiveConnection, DbError>> {
+	const rows = await fromPromise(
+		db
+			.select({
+				id: connections.id,
+				organizationId: connections.organizationId,
+				platform: connections.platform,
+				platformAccountId: connections.platformAccountId,
+				platformAccountLabel: connections.platformAccountLabel,
+				encryptedAccessToken: connections.encryptedAccessToken,
+				encryptedRefreshToken: connections.encryptedRefreshToken,
+				accessTokenExpiresAt: connections.accessTokenExpiresAt,
+				scopes: connections.scopes,
+			})
+			.from(connections)
+			.where(
+				and(
+					eq(connections.organizationId, params.organizationId),
+					eq(connections.platform, params.platform),
+					isNull(connections.revokedAt),
+				),
+			)
+			.limit(1),
+		toDbError,
+	);
+	if (rows.isErr()) return err(rows.error);
+	const first = rows.value[0];
+	if (!first) return err({ kind: "db_not_found" });
+	return ok(first);
+}
+
+/**
+ * Persist a refreshed token set. Called right after a successful
+ * `refreshAccessToken` call. If Google rotated the refresh_token too we
+ * update it; otherwise we leave the stored one intact (Google sometimes
+ * omits the rotation, and overwriting with null would break offline access).
+ */
+export async function updateConnectionTokens(params: {
+	id: string;
+	encryptedAccessToken: string;
+	encryptedRefreshToken?: string | null;
+	accessTokenExpiresAt: Date;
+	scopes?: readonly string[];
+}): Promise<Result<void, DbError>> {
+	const now = new Date();
+	const baseSet = {
+		encryptedAccessToken: params.encryptedAccessToken,
+		accessTokenExpiresAt: params.accessTokenExpiresAt,
+		updatedAt: now,
+	};
+	const withRefresh =
+		params.encryptedRefreshToken != null
+			? { ...baseSet, encryptedRefreshToken: params.encryptedRefreshToken }
+			: baseSet;
+	const set = params.scopes
+		? { ...withRefresh, scopes: [...params.scopes] }
+		: withRefresh;
+
+	const rows = await fromPromise(
+		db
+			.update(connections)
+			.set(set)
+			.where(and(eq(connections.id, params.id), isNull(connections.revokedAt)))
+			.returning({ id: connections.id }),
+		toDbError,
+	);
+	if (rows.isErr()) return err(rows.error);
+	if (rows.value.length === 0) return err({ kind: "db_not_found" });
+	return ok(undefined);
 }
 
 /**
