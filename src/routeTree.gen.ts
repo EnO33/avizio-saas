@@ -15,6 +15,7 @@ import { Route as SignInRouteImport } from './routes/sign-in'
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as AuthedRouteImport } from './routes/_authed'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthedReviewsRouteImport } from './routes/_authed/reviews'
 import { Route as AuthedDashboardRouteImport } from './routes/_authed/dashboard'
 import { Route as ApiWebhooksClerkRouteImport } from './routes/api/webhooks/clerk'
 import { Route as ApiOauthGoogleCallbackRouteImport } from './routes/api/oauth/google/callback'
@@ -48,6 +49,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthedReviewsRoute = AuthedReviewsRouteImport.update({
+  id: '/reviews',
+  path: '/reviews',
+  getParentRoute: () => AuthedRoute,
+} as any)
 const AuthedDashboardRoute = AuthedDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
@@ -71,6 +77,7 @@ export interface FileRoutesByFullPath {
   '/sign-up': typeof SignUpRoute
   '/sso-callback': typeof SsoCallbackRoute
   '/dashboard': typeof AuthedDashboardRoute
+  '/reviews': typeof AuthedReviewsRoute
   '/api/webhooks/clerk': typeof ApiWebhooksClerkRoute
   '/api/oauth/google/callback': typeof ApiOauthGoogleCallbackRoute
 }
@@ -81,6 +88,7 @@ export interface FileRoutesByTo {
   '/sign-up': typeof SignUpRoute
   '/sso-callback': typeof SsoCallbackRoute
   '/dashboard': typeof AuthedDashboardRoute
+  '/reviews': typeof AuthedReviewsRoute
   '/api/webhooks/clerk': typeof ApiWebhooksClerkRoute
   '/api/oauth/google/callback': typeof ApiOauthGoogleCallbackRoute
 }
@@ -93,6 +101,7 @@ export interface FileRoutesById {
   '/sign-up': typeof SignUpRoute
   '/sso-callback': typeof SsoCallbackRoute
   '/_authed/dashboard': typeof AuthedDashboardRoute
+  '/_authed/reviews': typeof AuthedReviewsRoute
   '/api/webhooks/clerk': typeof ApiWebhooksClerkRoute
   '/api/oauth/google/callback': typeof ApiOauthGoogleCallbackRoute
 }
@@ -105,6 +114,7 @@ export interface FileRouteTypes {
     | '/sign-up'
     | '/sso-callback'
     | '/dashboard'
+    | '/reviews'
     | '/api/webhooks/clerk'
     | '/api/oauth/google/callback'
   fileRoutesByTo: FileRoutesByTo
@@ -115,6 +125,7 @@ export interface FileRouteTypes {
     | '/sign-up'
     | '/sso-callback'
     | '/dashboard'
+    | '/reviews'
     | '/api/webhooks/clerk'
     | '/api/oauth/google/callback'
   id:
@@ -126,6 +137,7 @@ export interface FileRouteTypes {
     | '/sign-up'
     | '/sso-callback'
     | '/_authed/dashboard'
+    | '/_authed/reviews'
     | '/api/webhooks/clerk'
     | '/api/oauth/google/callback'
   fileRoutesById: FileRoutesById
@@ -185,6 +197,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authed/reviews': {
+      id: '/_authed/reviews'
+      path: '/reviews'
+      fullPath: '/reviews'
+      preLoaderRoute: typeof AuthedReviewsRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     '/_authed/dashboard': {
       id: '/_authed/dashboard'
       path: '/dashboard'
@@ -211,10 +230,12 @@ declare module '@tanstack/react-router' {
 
 interface AuthedRouteChildren {
   AuthedDashboardRoute: typeof AuthedDashboardRoute
+  AuthedReviewsRoute: typeof AuthedReviewsRoute
 }
 
 const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedDashboardRoute: AuthedDashboardRoute,
+  AuthedReviewsRoute: AuthedReviewsRoute,
 }
 
 const AuthedRouteWithChildren =
