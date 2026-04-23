@@ -1,15 +1,23 @@
 import pino, { type LoggerOptions } from "pino";
 import { env } from "./env";
 
-// `import.meta.env.DEV` is a Vite build-time constant. In a prod build it
-// is replaced literally by `false`, so the `pino-pretty` branch (and its
-// import) is dead-code-eliminated — no transport target shipped to prod,
-// and no runtime dependency on a devDep that isn't bundled.
+// `process.env.NODE_ENV` is replaced at build time by Vite (and by esbuild
+// when Trigger.dev bundles tasks), so this stays a true compile-time
+// constant in both target runtimes:
+//  - Vite prod : "production" === "development" → false → the pino-pretty
+//    transport branch is dead-code-eliminated, no devDep shipped.
+//  - Trigger.dev Docker container : `process.env.NODE_ENV` is set to
+//    "production" by the runner → false, plain JSON logs.
+//  - Local dev (vite dev, trigger dev) : "development" → true, pino-pretty.
 //
-// Do NOT use `env.NODE_ENV === "development"` here: that's a runtime check,
-// which means the prod bundle still references `pino-pretty` transport,
-// and Vercel crashes with `unable to determine transport target`.
-const isDev = import.meta.env.DEV;
+// Do NOT use `import.meta.env.DEV` here — it's undefined at runtime in
+// non-Vite environments (Trigger.dev indexer), and reading `.DEV` crashes
+// the module load with "Cannot read properties of undefined (reading 'DEV')".
+//
+// Do NOT use `env.NODE_ENV === "development"` either — that's a runtime
+// check on our Zod-parsed env, which keeps the pino-pretty transport in
+// the prod bundle and crashes Vercel with "unable to determine transport".
+const isDev = process.env.NODE_ENV === "development";
 
 const redactPaths = [
 	"password",
