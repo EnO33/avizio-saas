@@ -72,7 +72,14 @@ export const generateResponseDraftFn = createServerFn({ method: "POST" })
 			logger.error(
 				{
 					event: "ai_draft_generate_failed",
-					kind: e.kind,
+					// Include the per-kind detail so the log tells us whether it's
+					// an API 401/400 (status + message), an empty response, or a
+					// network blip. Without this the operator has to guess.
+					...(e.kind === "ai_api_error"
+						? { kind: e.kind, status: e.status, message: e.message }
+						: e.kind === "ai_network"
+							? { kind: e.kind, message: e.message }
+							: { kind: e.kind }),
 					reviewId: data.reviewId,
 				},
 				"AI draft generation failed",
