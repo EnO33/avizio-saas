@@ -42,11 +42,11 @@ export type CreateEstablishmentInput = {
 };
 
 export type UpdateEstablishmentPatch = {
-	readonly name?: string;
-	readonly city?: string;
-	readonly postalCode?: string | null;
-	readonly businessType?: BusinessType;
-	readonly languageCode?: string;
+	readonly name?: string | undefined;
+	readonly city?: string | undefined;
+	readonly postalCode?: string | null | undefined;
+	readonly businessType?: BusinessType | undefined;
+	readonly languageCode?: string | undefined;
 };
 
 const SUMMARY_COLUMNS = {
