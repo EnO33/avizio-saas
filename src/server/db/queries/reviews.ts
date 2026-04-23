@@ -1,9 +1,10 @@
-import { desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, sql } from "drizzle-orm";
 import type { DbError } from "#/lib/errors";
 import { unknownToMessage } from "#/lib/errors";
 import { err, fromPromise, ok, type Result } from "#/lib/result";
 import { db } from "../client";
 import { establishments, type NewReview, reviews } from "../schema";
+import type { BusinessType, Tone } from "./establishments";
 
 /**
  * Client-safe projection of a review row. Joins the establishment name for
@@ -158,4 +159,84 @@ export async function upsertReview(
 		});
 	}
 	return ok(first.wasInserted ? "inserted" : "updated");
+}
+
+/**
+ * Denormalised view joining a review with everything the AI response
+ * prompt needs from its establishment. Scoped by org through the join so a
+ * caller can only ever see their own reviews.
+ */
+export type ReviewWithEstablishment = {
+	readonly review: {
+		readonly id: string;
+		readonly authorName: string;
+		readonly rating: number;
+		readonly content: string;
+		readonly status: ReviewSummary["status"];
+	};
+	readonly establishment: {
+		readonly id: string;
+		readonly name: string;
+		readonly city: string;
+		readonly businessType: BusinessType;
+		readonly brandContext: string | null;
+		readonly defaultTone: Tone;
+	};
+};
+
+/**
+ * Fetch a single review + its establishment context, scoped by org. Used
+ * by the AI response generation flow to build the prompt. Returns
+ * `db_not_found` when the review id is unknown or belongs to another org.
+ */
+export async function getReviewWithEstablishmentForOrg(params: {
+	reviewId: string;
+	organizationId: string;
+}): Promise<Result<ReviewWithEstablishment, DbError>> {
+	const rows = await fromPromise(
+		db
+			.select({
+				reviewId: reviews.id,
+				authorName: reviews.authorName,
+				rating: reviews.rating,
+				content: reviews.content,
+				status: reviews.status,
+				establishmentId: establishments.id,
+				establishmentName: establishments.name,
+				city: establishments.city,
+				businessType: establishments.businessType,
+				brandContext: establishments.brandContext,
+				defaultTone: establishments.defaultTone,
+			})
+			.from(reviews)
+			.innerJoin(establishments, eq(reviews.establishmentId, establishments.id))
+			.where(
+				and(
+					eq(reviews.id, params.reviewId),
+					eq(establishments.organizationId, params.organizationId),
+				),
+			)
+			.limit(1),
+		toDbError,
+	);
+	if (rows.isErr()) return err(rows.error);
+	const row = rows.value[0];
+	if (!row) return err({ kind: "db_not_found" });
+	return ok({
+		review: {
+			id: row.reviewId,
+			authorName: row.authorName,
+			rating: row.rating,
+			content: row.content,
+			status: row.status,
+		},
+		establishment: {
+			id: row.establishmentId,
+			name: row.establishmentName,
+			city: row.city,
+			businessType: row.businessType,
+			brandContext: row.brandContext,
+			defaultTone: row.defaultTone,
+		},
+	});
 }
