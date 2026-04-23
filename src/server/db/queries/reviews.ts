@@ -1,9 +1,9 @@
 import { desc, eq, sql } from "drizzle-orm";
 import type { DbError } from "#/lib/errors";
 import { unknownToMessage } from "#/lib/errors";
-import { fromPromise, type Result } from "#/lib/result";
+import { err, fromPromise, ok, type Result } from "#/lib/result";
 import { db } from "../client";
-import { establishments, reviews } from "../schema";
+import { establishments, type NewReview, reviews } from "../schema";
 
 /**
  * Client-safe projection of a review row. Joins the establishment name for
@@ -94,4 +94,68 @@ export async function countReviewsByStatusForOrg(
 			skipped: byStatus.skipped ?? 0,
 		};
 	});
+}
+
+export type UpsertReviewInput = Pick<
+	NewReview,
+	| "establishmentId"
+	| "platform"
+	| "platformReviewId"
+	| "authorName"
+	| "authorAvatarUrl"
+	| "rating"
+	| "content"
+	| "languageCode"
+	| "publishedAt"
+	| "status"
+	| "rawPayload"
+>;
+
+export type UpsertReviewOutcome = "inserted" | "updated";
+
+/**
+ * Idempotent upsert keyed on (platform, platform_review_id) — the unique
+ * index on the reviews table. On conflict we refresh the fields that can
+ * actually change on Google's side (content, rating, author + avatar url,
+ * raw payload, fetched_at), but deliberately preserve the establishment id,
+ * the published_at (immutable from Google) and the status — we don't want
+ * a refetch to downgrade a review from `responded` back to `new`.
+ */
+export async function upsertReview(
+	input: UpsertReviewInput,
+): Promise<Result<UpsertReviewOutcome, DbError>> {
+	const now = new Date();
+	const rows = await fromPromise(
+		db
+			.insert(reviews)
+			.values({ ...input, fetchedAt: now })
+			.onConflictDoUpdate({
+				target: [reviews.platform, reviews.platformReviewId],
+				set: {
+					authorName: input.authorName,
+					authorAvatarUrl: input.authorAvatarUrl,
+					rating: input.rating,
+					content: input.content,
+					languageCode: input.languageCode,
+					rawPayload: input.rawPayload,
+					fetchedAt: now,
+				},
+			})
+			.returning({
+				id: reviews.id,
+				// PostgreSQL system column: xmax = 0 for fresh inserts,
+				// > 0 for rows that were updated by onConflict.
+				wasInserted: sql<boolean>`(xmax = 0)`,
+			}),
+		toDbError,
+	);
+	if (rows.isErr()) return err(rows.error);
+	const first = rows.value[0];
+	if (!first) {
+		return err({
+			kind: "db_unknown",
+			message: "upsertReview returned no row",
+		});
+	}
+	return ok(first.wasInserted ? "inserted" : "updated");
 }

@@ -208,6 +208,32 @@ export async function markConnectionRevoked(params: {
 }
 
 /**
+ * Cross-org listing of every active Google connection in the system. Used
+ * by background jobs (the review-fetch cron) that need to fan out across
+ * tenants. No PII in the projection — just the ids a scheduler needs.
+ */
+export async function listAllActiveGoogleConnections(): Promise<
+	Result<
+		ReadonlyArray<{ readonly id: string; readonly organizationId: string }>,
+		DbError
+	>
+> {
+	return fromPromise(
+		db
+			.select({
+				id: connections.id,
+				organizationId: connections.organizationId,
+			})
+			.from(connections)
+			.where(
+				and(eq(connections.platform, "google"), isNull(connections.revokedAt)),
+			)
+			.orderBy(connections.organizationId),
+		toDbError,
+	);
+}
+
+/**
  * List the org's active platform connections in reverse chronological order
  * of creation. Revoked rows are filtered out — a revoked connection is
  * effectively gone from the user's point of view, they have to reconnect.
