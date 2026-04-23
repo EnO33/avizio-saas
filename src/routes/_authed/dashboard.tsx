@@ -1,6 +1,7 @@
-import { UserButton } from "@clerk/tanstack-react-start";
+import { OrganizationSwitcher, UserButton } from "@clerk/tanstack-react-start";
 import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
+import { EnsureActiveOrganization } from "#/components/auth/ensure-active-organization";
 import { ConnectGoogleButton } from "#/components/connections/connect-google-button";
 import { OAuthResultBanner } from "#/components/connections/oauth-result-banner";
 
@@ -22,10 +23,19 @@ function Dashboard() {
 		<main className="mx-auto max-w-5xl space-y-6 p-8">
 			<header className="flex items-center justify-between">
 				<h1 className="font-bold text-3xl tracking-tight">Dashboard</h1>
-				<UserButton />
+				<div className="flex items-center gap-3">
+					<OrganizationSwitcher
+						hidePersonal
+						afterCreateOrganizationUrl="/dashboard"
+						afterSelectOrganizationUrl="/dashboard"
+					/>
+					<UserButton />
+				</div>
 			</header>
 
 			<OAuthResultBanner connected={connected} error={error} />
+
+			{!orgId ? <EnsureActiveOrganization /> : null}
 
 			<section className="rounded-lg border border-neutral-200 p-6">
 				<p className="text-neutral-600 text-sm">
@@ -44,15 +54,17 @@ function Dashboard() {
 				</p>
 			</section>
 
-			<section className="space-y-4 rounded-lg border border-neutral-200 p-6">
-				<div>
-					<h2 className="font-semibold text-lg">Intégrations</h2>
-					<p className="mt-1 text-neutral-500 text-sm">
-						Connecte tes plateformes pour commencer à collecter les avis.
-					</p>
-				</div>
-				<ConnectGoogleButton />
-			</section>
+			{orgId ? (
+				<section className="space-y-4 rounded-lg border border-neutral-200 p-6">
+					<div>
+						<h2 className="font-semibold text-lg">Intégrations</h2>
+						<p className="mt-1 text-neutral-500 text-sm">
+							Connecte tes plateformes pour commencer à collecter les avis.
+						</p>
+					</div>
+					<ConnectGoogleButton />
+				</section>
+			) : null}
 		</main>
 	);
 }
