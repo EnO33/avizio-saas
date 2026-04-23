@@ -44,4 +44,8 @@ jobs:
       - name: Deploy to Trigger.dev (prod)
         env:
           TRIGGER_ACCESS_TOKEN: ${{ secrets.TRIGGER_ACCESS_TOKEN }}
+          # Project ref is public (visible in dashboard URLs), not a secret —
+          # surfaced as a GH Actions variable so a fork can point at their
+          # own Trigger.dev project without editing any tracked file.
+          TRIGGER_PROJECT_REF: ${{ vars.TRIGGER_PROJECT_REF }}
         run: bun run trigger:deploy
