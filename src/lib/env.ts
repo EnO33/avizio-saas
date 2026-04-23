@@ -41,6 +41,7 @@ const envSchema = z
 			.default("development"),
 		CLERK_PUBLISHABLE_KEY: z.string().startsWith("pk_"),
 		CLERK_SECRET_KEY: z.string().startsWith("sk_"),
+		CLERK_WEBHOOK_SECRET: z.string().startsWith("whsec_"),
 		ENCRYPTION_KEYS_JSON: encryptionKeysJsonField,
 		ENCRYPTION_KEY_CURRENT: z.string().regex(/^v\d+$/, "must match v<number>"),
 	})
