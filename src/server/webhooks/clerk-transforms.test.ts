@@ -2,6 +2,7 @@ import type {
 	EmailAddressJSON,
 	OrganizationJSON,
 	OrganizationMembershipJSON,
+	SessionWebhookEvent,
 	UserJSON,
 } from "@clerk/backend";
 import { describe, expect, it } from "vitest";
@@ -9,8 +10,11 @@ import {
 	organizationJsonToNewRow,
 	organizationJsonToUpdateRow,
 	organizationMembershipJsonToRow,
+	sessionJsonToUserSignIn,
 	userJsonToRow,
 } from "./clerk-transforms";
+
+type SessionWebhookEventJSON = SessionWebhookEvent["data"];
 
 // Test fixtures don't need every Clerk field — we only care about what the
 // transforms touch. `as` keeps the fixtures readable without polluting the
@@ -197,5 +201,28 @@ describe("organizationMembershipJsonToRow", () => {
 			makeMembership({ role: "org:custom_manager" }),
 		);
 		expect(row.role).toBe("org:custom_manager");
+	});
+});
+
+// cast-reason: minimal test fixtures
+function makeSession(
+	overrides: Partial<SessionWebhookEventJSON> = {},
+): SessionWebhookEventJSON {
+	return {
+		id: "sess_abc",
+		user_id: "user_123",
+		created_at: 1_700_000_000_000,
+		...overrides,
+	} as SessionWebhookEventJSON;
+}
+
+describe("sessionJsonToUserSignIn", () => {
+	it("extracts userId and converts created_at to Date", () => {
+		const ts = 1_700_000_123_456;
+		const update = sessionJsonToUserSignIn(
+			makeSession({ user_id: "user_42", created_at: ts }),
+		);
+		expect(update.userId).toBe("user_42");
+		expect(update.lastSignInAt).toEqual(new Date(ts));
 	});
 });
