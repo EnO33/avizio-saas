@@ -19,6 +19,7 @@ jobs:
       DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
       CLERK_PUBLISHABLE_KEY: pk_test_ci_dummy
       CLERK_SECRET_KEY: sk_test_ci_dummy
+      CLERK_WEBHOOK_SECRET: whsec_ci_dummy
       # 32 bytes of zeros, base64-encoded. Dummy for CI env parsing only —
       # never used to encrypt/decrypt anything real.
       ENCRYPTION_KEYS_JSON: '{"v1":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="}'
