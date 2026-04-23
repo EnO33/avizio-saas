@@ -24,6 +24,17 @@ import {
 const PROVIDER = "google";
 const ACCOUNT_MANAGEMENT_BASE =
 	"https://mybusinessaccountmanagement.googleapis.com/v1";
+const BUSINESS_INFORMATION_BASE =
+	"https://mybusinessbusinessinformation.googleapis.com/v1";
+
+/**
+ * Fields we ask Google to return on `listLocations`. The endpoint requires
+ * an explicit `readMask`. We keep it narrow to what the picker UI + the
+ * review fetcher actually consume — title for display, storefrontAddress
+ * for matching against establishments, storeCode as an optional power-user
+ * identifier. Adding a field here is free but widens the wire payload.
+ */
+const LOCATION_READ_MASK = "name,title,storeCode,storefrontAddress";
 
 /**
  * Narrow view of a Business Profile account. Google returns richer objects
@@ -151,6 +162,113 @@ export async function listAccounts(
 		accountName: a.accountName ?? null,
 	}));
 	return ok(accounts);
+}
+
+/**
+ * Narrow view of a Business Profile location. Google returns a deeply
+ * nested structure (phone numbers, categories, regular/special hours,
+ * metadata, etc.); we expose only what the picker UI + review fetcher
+ * actually consume.
+ */
+export type GbpLocation = {
+	readonly name: string;
+	readonly title: string;
+	readonly storeCode: string | null;
+	readonly address: GbpPostalAddress | null;
+};
+
+export type GbpPostalAddress = {
+	readonly regionCode: string;
+	readonly postalCode: string | null;
+	readonly administrativeArea: string | null;
+	readonly locality: string | null;
+	readonly addressLines: readonly string[];
+};
+
+const postalAddressSchema = z.object({
+	regionCode: z.string().min(1),
+	languageCode: z.string().optional(),
+	postalCode: z.string().optional(),
+	administrativeArea: z.string().optional(),
+	locality: z.string().optional(),
+	addressLines: z.array(z.string()).optional(),
+});
+
+const locationSchema = z.object({
+	name: z.string().min(1),
+	title: z.string().min(1),
+	storeCode: z.string().optional(),
+	storefrontAddress: postalAddressSchema.optional(),
+});
+
+const listLocationsResponseSchema = z.object({
+	locations: z.array(locationSchema).optional(),
+	nextPageToken: z.string().optional(),
+	totalSize: z.number().int().nonnegative().optional(),
+});
+
+/**
+ * GET the locations belonging to a Business Profile account. `accountName`
+ * is the full resource path returned by `listAccounts` (e.g.
+ * "accounts/100000000000001") — the function handles the URL construction.
+ */
+export async function listLocations(params: {
+	accessToken: string;
+	accountName: string;
+}): Promise<Result<GbpLocation[], GbpError | IntegrationError>> {
+	const url = new URL(
+		`${BUSINESS_INFORMATION_BASE}/${params.accountName}/locations`,
+	);
+	url.searchParams.set("readMask", LOCATION_READ_MASK);
+
+	const responseResult = await fromPromise(
+		fetch(url.toString(), {
+			headers: { authorization: `Bearer ${params.accessToken}` },
+		}),
+		toNetworkError,
+	);
+	if (responseResult.isErr()) return err(responseResult.error);
+	const response = responseResult.value;
+
+	const bodyResult = await fromPromise(response.text(), toNetworkError);
+	if (bodyResult.isErr()) return err(bodyResult.error);
+	const rawBody = bodyResult.value;
+
+	if (!response.ok) {
+		return err(toGbpHttpError(response.status, rawBody));
+	}
+
+	const jsonResult = safeJsonParseText(rawBody);
+	if (jsonResult.isErr()) {
+		return err({
+			kind: "gbp_invalid_response",
+			issues: [{ path: [], message: "response body is not valid JSON" }],
+		});
+	}
+
+	const parsed = listLocationsResponseSchema.safeParse(jsonResult.value);
+	if (!parsed.success) {
+		return err({
+			kind: "gbp_invalid_response",
+			issues: zodIssuesToValidationIssues(parsed.error),
+		});
+	}
+
+	const locations: GbpLocation[] = (parsed.data.locations ?? []).map((l) => ({
+		name: l.name,
+		title: l.title,
+		storeCode: l.storeCode ?? null,
+		address: l.storefrontAddress
+			? {
+					regionCode: l.storefrontAddress.regionCode,
+					postalCode: l.storefrontAddress.postalCode ?? null,
+					administrativeArea: l.storefrontAddress.administrativeArea ?? null,
+					locality: l.storefrontAddress.locality ?? null,
+					addressLines: l.storefrontAddress.addressLines ?? [],
+				}
+			: null,
+	}));
+	return ok(locations);
 }
 
 /**

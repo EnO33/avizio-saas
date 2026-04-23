@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { listAccounts } from "./google-business";
+import { listAccounts, listLocations } from "./google-business";
 
 function jsonResponse(body: unknown, status = 200): Response {
 	return new Response(JSON.stringify(body), {
@@ -191,5 +191,170 @@ describe("listAccounts", () => {
 		expect(result.isErr()).toBe(true);
 		if (result.isOk()) throw new Error("unreachable");
 		expect(result.error.kind).toBe("integration_network");
+	});
+});
+
+// Fixture shaped after
+// https://developers.google.com/my-business/reference/businessinformation/rest/v1/accounts.locations/list
+const LIST_LOCATIONS_FIXTURE = {
+	locations: [
+		{
+			name: "locations/987654321",
+			title: "Le Gourmet - Lyon",
+			storeCode: "LG-LYON-01",
+			storefrontAddress: {
+				regionCode: "FR",
+				languageCode: "fr",
+				postalCode: "69001",
+				administrativeArea: "Rhône",
+				locality: "Lyon",
+				addressLines: ["12 Rue Mercière"],
+			},
+		},
+		{
+			name: "locations/555666777",
+			title: "Le Gourmet - Annexe",
+			storefrontAddress: {
+				regionCode: "FR",
+				locality: "Villeurbanne",
+				addressLines: ["3 Avenue Henri Barbusse"],
+			},
+		},
+	],
+	totalSize: 2,
+};
+
+describe("listLocations", () => {
+	beforeEach(() => {
+		vi.spyOn(globalThis, "fetch");
+	});
+	afterEach(() => {
+		vi.restoreAllMocks();
+	});
+
+	it("GETs /v1/accounts/{id}/locations with Bearer token + readMask", async () => {
+		const fetchMock = vi.mocked(globalThis.fetch);
+		fetchMock.mockResolvedValueOnce(
+			new Response(JSON.stringify(LIST_LOCATIONS_FIXTURE), { status: 200 }),
+		);
+
+		const result = await listLocations({
+			accessToken: "at-1234",
+			accountName: "accounts/100000000000001",
+		});
+		expect(result.isOk()).toBe(true);
+
+		const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+		const parsed = new URL(url);
+		expect(parsed.origin).toBe(
+			"https://mybusinessbusinessinformation.googleapis.com",
+		);
+		expect(parsed.pathname).toBe("/v1/accounts/100000000000001/locations");
+		expect(parsed.searchParams.get("readMask")).toBe(
+			"name,title,storeCode,storefrontAddress",
+		);
+		const headers = init.headers as Record<string, string>;
+		expect(headers.authorization).toBe("Bearer at-1234");
+	});
+
+	it("narrows the location projection and flattens address fields", async () => {
+		vi.mocked(globalThis.fetch).mockResolvedValueOnce(
+			new Response(JSON.stringify(LIST_LOCATIONS_FIXTURE), { status: 200 }),
+		);
+
+		const result = await listLocations({
+			accessToken: "at",
+			accountName: "accounts/1",
+		});
+		expect(result.isOk()).toBe(true);
+		if (result.isErr()) throw new Error("unreachable");
+		expect(result.value).toEqual([
+			{
+				name: "locations/987654321",
+				title: "Le Gourmet - Lyon",
+				storeCode: "LG-LYON-01",
+				address: {
+					regionCode: "FR",
+					postalCode: "69001",
+					administrativeArea: "Rhône",
+					locality: "Lyon",
+					addressLines: ["12 Rue Mercière"],
+				},
+			},
+			{
+				name: "locations/555666777",
+				title: "Le Gourmet - Annexe",
+				storeCode: null,
+				address: {
+					regionCode: "FR",
+					postalCode: null,
+					administrativeArea: null,
+					locality: "Villeurbanne",
+					addressLines: ["3 Avenue Henri Barbusse"],
+				},
+			},
+		]);
+	});
+
+	it("handles a location with no storefrontAddress by nulling the address", async () => {
+		vi.mocked(globalThis.fetch).mockResolvedValueOnce(
+			new Response(
+				JSON.stringify({
+					locations: [{ name: "locations/1", title: "Virtual Shop" }],
+				}),
+				{ status: 200 },
+			),
+		);
+
+		const result = await listLocations({
+			accessToken: "at",
+			accountName: "accounts/1",
+		});
+		expect(result.isOk()).toBe(true);
+		if (result.isErr()) throw new Error("unreachable");
+		expect(result.value[0]?.address).toBeNull();
+	});
+
+	it("returns an empty array when Google's response omits `locations`", async () => {
+		vi.mocked(globalThis.fetch).mockResolvedValueOnce(
+			new Response("{}", { status: 200 }),
+		);
+		const result = await listLocations({
+			accessToken: "at",
+			accountName: "accounts/1",
+		});
+		expect(result.isOk()).toBe(true);
+		if (result.isErr()) throw new Error("unreachable");
+		expect(result.value).toEqual([]);
+	});
+
+	it("propagates HTTP errors via the shared mapper", async () => {
+		vi.mocked(globalThis.fetch).mockResolvedValueOnce(
+			new Response("expired", { status: 401 }),
+		);
+
+		const result = await listLocations({
+			accessToken: "at",
+			accountName: "accounts/1",
+		});
+		expect(result.isErr()).toBe(true);
+		if (result.isOk()) throw new Error("unreachable");
+		expect(result.error.kind).toBe("integration_unauthorized");
+	});
+
+	it("returns gbp_invalid_response when a location is missing `title`", async () => {
+		vi.mocked(globalThis.fetch).mockResolvedValueOnce(
+			new Response(JSON.stringify({ locations: [{ name: "locations/1" }] }), {
+				status: 200,
+			}),
+		);
+
+		const result = await listLocations({
+			accessToken: "at",
+			accountName: "accounts/1",
+		});
+		expect(result.isErr()).toBe(true);
+		if (result.isOk()) throw new Error("unreachable");
+		expect(result.error.kind).toBe("gbp_invalid_response");
 	});
 });
