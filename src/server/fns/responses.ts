@@ -3,10 +3,16 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { logger } from "#/lib/logger";
 import {
+	approveResponse,
 	createResponseDraft,
+	listResponsesForReview,
 	type ResponseSummary,
+	updateResponseContent,
 } from "#/server/db/queries/responses";
-import { getReviewWithEstablishmentForOrg } from "#/server/db/queries/reviews";
+import {
+	getReviewWithEstablishmentForOrg,
+	type ReviewWithEstablishment,
+} from "#/server/db/queries/reviews";
 import { generateResponseDraft } from "#/server/services/ai-response";
 
 export type GenerateResponseDraftUiResult =
@@ -121,4 +127,145 @@ export const generateResponseDraftFn = createServerFn({ method: "POST" })
 		);
 
 		return { kind: "ok", response: createResult.value };
+	});
+
+// ── Detail loader ──────────────────────────────────────────────────────────
+
+export type ReviewDetail = {
+	readonly review: ReviewWithEstablishment["review"];
+	readonly establishment: ReviewWithEstablishment["establishment"];
+	readonly responses: readonly ResponseSummary[];
+};
+
+/**
+ * Bundle everything the detail page needs in a single server round-trip.
+ * Returns null when the review is unknown or belongs to another org so the
+ * route renders a friendly "introuvable" block.
+ */
+export const getReviewDetail = createServerFn()
+	.inputValidator(z.object({ id: z.string().min(1) }))
+	.handler(async ({ data }): Promise<ReviewDetail | null> => {
+		const session = await auth();
+		if (!session.isAuthenticated || !session.orgId) return null;
+
+		const reviewResult = await getReviewWithEstablishmentForOrg({
+			reviewId: data.id,
+			organizationId: session.orgId,
+		});
+		if (reviewResult.isErr()) {
+			if (reviewResult.error.kind !== "db_not_found") {
+				logger.error(
+					{
+						event: "review_detail_fetch_failed",
+						kind: reviewResult.error.kind,
+						id: data.id,
+					},
+					"Failed to load review for detail page",
+				);
+			}
+			return null;
+		}
+
+		const responsesResult = await listResponsesForReview({
+			reviewId: data.id,
+			organizationId: session.orgId,
+		});
+		// A response-read failure is not fatal — we can still show the review
+		// with no drafts. Log and fall through with an empty list.
+		const responseRows = responsesResult.isOk() ? responsesResult.value : [];
+		if (responsesResult.isErr()) {
+			logger.error(
+				{
+					event: "review_responses_fetch_failed",
+					kind: responsesResult.error.kind,
+					id: data.id,
+				},
+				"Failed to load responses — rendering detail with empty list",
+			);
+		}
+
+		return {
+			review: reviewResult.value.review,
+			establishment: reviewResult.value.establishment,
+			responses: responseRows,
+		};
+	});
+
+// ── Edit draft ──────────────────────────────────────────────────────────────
+
+export type UpdateResponseUiResult =
+	| { readonly kind: "ok"; readonly response: ResponseSummary }
+	| { readonly kind: "unauthenticated" }
+	| { readonly kind: "not_found" }
+	| { readonly kind: "error" };
+
+export const updateResponseContentFn = createServerFn({ method: "POST" })
+	.inputValidator(
+		z.object({
+			id: z.string().min(1),
+			content: z.string().trim().min(1).max(5000),
+		}),
+	)
+	.handler(async ({ data }): Promise<UpdateResponseUiResult> => {
+		const session = await auth();
+		if (!session.isAuthenticated || !session.orgId) {
+			return { kind: "unauthenticated" };
+		}
+
+		const result = await updateResponseContent({
+			id: data.id,
+			organizationId: session.orgId,
+			content: data.content,
+		});
+		if (result.isErr()) {
+			if (result.error.kind === "db_not_found") return { kind: "not_found" };
+			logger.error(
+				{
+					event: "response_update_failed",
+					kind: result.error.kind,
+					id: data.id,
+				},
+				"Failed to update response content",
+			);
+			return { kind: "error" };
+		}
+		return { kind: "ok", response: result.value };
+	});
+
+// ── Approve draft ──────────────────────────────────────────────────────────
+
+export const approveResponseFn = createServerFn({ method: "POST" })
+	.inputValidator(z.object({ id: z.string().min(1) }))
+	.handler(async ({ data }): Promise<UpdateResponseUiResult> => {
+		const session = await auth();
+		if (!session.isAuthenticated || !session.orgId) {
+			return { kind: "unauthenticated" };
+		}
+
+		const result = await approveResponse({
+			id: data.id,
+			organizationId: session.orgId,
+		});
+		if (result.isErr()) {
+			if (result.error.kind === "db_not_found") return { kind: "not_found" };
+			logger.error(
+				{
+					event: "response_approve_failed",
+					kind: result.error.kind,
+					id: data.id,
+				},
+				"Failed to approve response",
+			);
+			return { kind: "error" };
+		}
+
+		logger.info(
+			{
+				event: "response_approved",
+				responseId: data.id,
+				orgId: session.orgId,
+			},
+			"Response approved",
+		);
+		return { kind: "ok", response: result.value };
 	});
