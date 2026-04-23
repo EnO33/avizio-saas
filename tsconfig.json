@@ -2,8 +2,10 @@
 	"include": [
 		"src/**/*.ts",
 		"src/**/*.tsx",
+		"trigger/**/*.ts",
 		"vite.config.ts",
-		"drizzle.config.ts"
+		"drizzle.config.ts",
+		"trigger.config.ts"
 	],
 	"exclude": ["node_modules", ".output", ".nitro", ".tanstack"],
 	"compilerOptions": {
