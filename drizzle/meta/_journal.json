@@ -15,6 +15,13 @@
       "when": 1776925817514,
       "tag": "0001_users_and_memberships",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1776935354099,
+      "tag": "0002_connections_organization_scope",
+      "breakpoints": true
     }
   ]
 }
