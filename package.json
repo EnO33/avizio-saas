@@ -81,5 +81,8 @@
   },
   "trustedDependencies": [
     "@clerk/shared"
-  ]
+  ],
+  "overrides": {
+    "systeminformation": "^5.27.14"
+  }
 }
