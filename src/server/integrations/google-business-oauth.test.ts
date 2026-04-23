@@ -6,6 +6,7 @@ import {
 	exchangeCodeForTokens,
 	GOOGLE_OAUTH_SCOPES,
 	type GoogleIdTokenClaims,
+	revokeGoogleToken,
 } from "./google-business-oauth";
 
 // ── fixtures ───────────────────────────────────────────────────────────────
@@ -243,6 +244,67 @@ describe("exchangeCodeForTokens", () => {
 			code: "c",
 			redirectUri: REDIRECT,
 		});
+		expect(result.isErr()).toBe(true);
+		if (result.isOk()) throw new Error("unreachable");
+		expect(result.error.kind).toBe("integration_network");
+	});
+});
+
+// ── revokeGoogleToken ──────────────────────────────────────────────────────
+
+describe("revokeGoogleToken", () => {
+	beforeEach(() => {
+		vi.spyOn(globalThis, "fetch");
+	});
+	afterEach(() => {
+		vi.restoreAllMocks();
+	});
+
+	it("POSTs the token to Google's revoke endpoint", async () => {
+		const fetchMock = vi.mocked(globalThis.fetch);
+		fetchMock.mockResolvedValueOnce(new Response("", { status: 200 }));
+
+		const result = await revokeGoogleToken("my-token");
+		expect(result.isOk()).toBe(true);
+
+		const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+		expect(url).toBe("https://oauth2.googleapis.com/revoke");
+		expect(init.method).toBe("POST");
+		expect(new URLSearchParams(init.body as string).get("token")).toBe(
+			"my-token",
+		);
+	});
+
+	it("treats a 400 with invalid_token as success (already revoked)", async () => {
+		vi.mocked(globalThis.fetch).mockResolvedValueOnce(
+			new Response(JSON.stringify({ error: "invalid_token" }), {
+				status: 400,
+			}),
+		);
+
+		const result = await revokeGoogleToken("already-dead");
+		expect(result.isOk()).toBe(true);
+	});
+
+	it("surfaces other 4xx responses as oauth_token_exchange_failed", async () => {
+		vi.mocked(globalThis.fetch).mockResolvedValueOnce(
+			new Response("nope", { status: 403 }),
+		);
+
+		const result = await revokeGoogleToken("bad");
+		expect(result.isErr()).toBe(true);
+		if (result.isOk()) throw new Error("unreachable");
+		expect(result.error.kind).toBe("oauth_token_exchange_failed");
+		if (result.error.kind !== "oauth_token_exchange_failed") {
+			throw new Error("unreachable");
+		}
+		expect(result.error.status).toBe(403);
+	});
+
+	it("returns integration_network on fetch rejection", async () => {
+		vi.mocked(globalThis.fetch).mockRejectedValueOnce(new Error("ENETDOWN"));
+
+		const result = await revokeGoogleToken("x");
 		expect(result.isErr()).toBe(true);
 		if (result.isOk()) throw new Error("unreachable");
 		expect(result.error.kind).toBe("integration_network");
