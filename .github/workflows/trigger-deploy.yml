@@ -6,6 +6,13 @@ on:
     paths:
       - "trigger/**"
       - "trigger.config.ts"
+      # Tasks transitively import `src/lib/*` (logger, crypto, env, result,
+      # errors) and `src/server/*` (db queries, integrations, services) —
+      # a change to any of those can affect the deployed bundle's behaviour
+      # even when nothing under `trigger/` itself moves. The narrow filter
+      # (trigger/** only) let a logger fix slip through without redeploy.
+      - "src/lib/**"
+      - "src/server/**"
       - "package.json"
       - "bun.lock"
   # Lets us re-deploy manually from the Actions tab without a code change —
