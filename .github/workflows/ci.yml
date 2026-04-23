@@ -24,6 +24,10 @@ jobs:
       # never used to encrypt/decrypt anything real.
       ENCRYPTION_KEYS_JSON: '{"v1":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="}'
       ENCRYPTION_KEY_CURRENT: v1
+      # Dummy OAuth credentials for CI env parsing only.
+      GOOGLE_OAUTH_CLIENT_ID: ci-dummy.apps.googleusercontent.com
+      GOOGLE_OAUTH_CLIENT_SECRET: GOCSPX-ci-dummy-secret
+      OAUTH_STATE_SECRET: ci-dummy-state-secret-32-chars-minimum-placeholder
       NODE_ENV: test
     steps:
       - name: Checkout

@@ -1,20 +1,34 @@
 import { UserButton } from "@clerk/tanstack-react-start";
 import { createFileRoute } from "@tanstack/react-router";
+import { z } from "zod";
+import { ConnectGoogleButton } from "#/components/connections/connect-google-button";
+import { OAuthResultBanner } from "#/components/connections/oauth-result-banner";
+
+const dashboardSearchSchema = z.object({
+	connected: z.enum(["google"]).optional(),
+	error: z.string().optional(),
+});
 
 export const Route = createFileRoute("/_authed/dashboard")({
+	validateSearch: dashboardSearchSchema,
 	component: Dashboard,
 });
 
 function Dashboard() {
 	const { userId, orgId } = Route.useRouteContext();
+	const { connected, error } = Route.useSearch();
+
 	return (
-		<main className="mx-auto max-w-5xl p-8">
+		<main className="mx-auto max-w-5xl space-y-6 p-8">
 			<header className="flex items-center justify-between">
-				<h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+				<h1 className="font-bold text-3xl tracking-tight">Dashboard</h1>
 				<UserButton />
 			</header>
-			<section className="mt-8 rounded-lg border border-neutral-200 p-6">
-				<p className="text-sm text-neutral-600">
+
+			<OAuthResultBanner connected={connected} error={error} />
+
+			<section className="rounded-lg border border-neutral-200 p-6">
+				<p className="text-neutral-600 text-sm">
 					Connecté en tant que <code className="text-xs">{userId}</code>
 					{orgId ? (
 						<>
@@ -28,6 +42,16 @@ function Dashboard() {
 				<p className="mt-4 text-neutral-500">
 					Les établissements et avis arriveront dans les prochains sprints.
 				</p>
+			</section>
+
+			<section className="space-y-4 rounded-lg border border-neutral-200 p-6">
+				<div>
+					<h2 className="font-semibold text-lg">Intégrations</h2>
+					<p className="mt-1 text-neutral-500 text-sm">
+						Connecte tes plateformes pour commencer à collecter les avis.
+					</p>
+				</div>
+				<ConnectGoogleButton />
 			</section>
 		</main>
 	);

@@ -17,6 +17,7 @@ import { Route as AuthedRouteImport } from './routes/_authed'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthedDashboardRouteImport } from './routes/_authed/dashboard'
 import { Route as ApiWebhooksClerkRouteImport } from './routes/api/webhooks/clerk'
+import { Route as ApiOauthGoogleCallbackRouteImport } from './routes/api/oauth/google/callback'
 
 const SsoCallbackRoute = SsoCallbackRouteImport.update({
   id: '/sso-callback',
@@ -57,6 +58,11 @@ const ApiWebhooksClerkRoute = ApiWebhooksClerkRouteImport.update({
   path: '/api/webhooks/clerk',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiOauthGoogleCallbackRoute = ApiOauthGoogleCallbackRouteImport.update({
+  id: '/api/oauth/google/callback',
+  path: '/api/oauth/google/callback',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -66,6 +72,7 @@ export interface FileRoutesByFullPath {
   '/sso-callback': typeof SsoCallbackRoute
   '/dashboard': typeof AuthedDashboardRoute
   '/api/webhooks/clerk': typeof ApiWebhooksClerkRoute
+  '/api/oauth/google/callback': typeof ApiOauthGoogleCallbackRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -75,6 +82,7 @@ export interface FileRoutesByTo {
   '/sso-callback': typeof SsoCallbackRoute
   '/dashboard': typeof AuthedDashboardRoute
   '/api/webhooks/clerk': typeof ApiWebhooksClerkRoute
+  '/api/oauth/google/callback': typeof ApiOauthGoogleCallbackRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -86,6 +94,7 @@ export interface FileRoutesById {
   '/sso-callback': typeof SsoCallbackRoute
   '/_authed/dashboard': typeof AuthedDashboardRoute
   '/api/webhooks/clerk': typeof ApiWebhooksClerkRoute
+  '/api/oauth/google/callback': typeof ApiOauthGoogleCallbackRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -97,6 +106,7 @@ export interface FileRouteTypes {
     | '/sso-callback'
     | '/dashboard'
     | '/api/webhooks/clerk'
+    | '/api/oauth/google/callback'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -106,6 +116,7 @@ export interface FileRouteTypes {
     | '/sso-callback'
     | '/dashboard'
     | '/api/webhooks/clerk'
+    | '/api/oauth/google/callback'
   id:
     | '__root__'
     | '/'
@@ -116,6 +127,7 @@ export interface FileRouteTypes {
     | '/sso-callback'
     | '/_authed/dashboard'
     | '/api/webhooks/clerk'
+    | '/api/oauth/google/callback'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -126,6 +138,7 @@ export interface RootRouteChildren {
   SignUpRoute: typeof SignUpRoute
   SsoCallbackRoute: typeof SsoCallbackRoute
   ApiWebhooksClerkRoute: typeof ApiWebhooksClerkRoute
+  ApiOauthGoogleCallbackRoute: typeof ApiOauthGoogleCallbackRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -186,6 +199,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiWebhooksClerkRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/oauth/google/callback': {
+      id: '/api/oauth/google/callback'
+      path: '/api/oauth/google/callback'
+      fullPath: '/api/oauth/google/callback'
+      preLoaderRoute: typeof ApiOauthGoogleCallbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -208,6 +228,7 @@ const rootRouteChildren: RootRouteChildren = {
   SignUpRoute: SignUpRoute,
   SsoCallbackRoute: SsoCallbackRoute,
   ApiWebhooksClerkRoute: ApiWebhooksClerkRoute,
+  ApiOauthGoogleCallbackRoute: ApiOauthGoogleCallbackRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

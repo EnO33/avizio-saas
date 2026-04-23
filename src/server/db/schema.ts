@@ -160,6 +160,10 @@ export const establishments = pgTable(
 );
 
 // ─── Connections (OAuth + API creds, encrypted) ───────────────────────────
+//
+// Scoped to an organization — a single OAuth consent covers every location
+// (establishment) owned by the same Google Business Profile account. Mapping
+// a specific establishment to its remote location is handled separately.
 
 export const connections = pgTable(
 	"connections",
@@ -167,10 +171,13 @@ export const connections = pgTable(
 		id: text("id")
 			.primaryKey()
 			.$defaultFn(() => createId()),
-		establishmentId: text("establishment_id")
+		organizationId: text("organization_id")
 			.notNull()
-			.references(() => establishments.id, { onDelete: "cascade" }),
+			.references(() => organizations.id, { onDelete: "cascade" }),
 		platform: platformEnum("platform").notNull(),
+		// Stable identifier returned by the provider for the connected account
+		// (e.g. Google OIDC `sub`). Used to detect re-connections of the same
+		// account and prevent duplicate rows.
 		platformAccountId: text("platform_account_id").notNull(),
 		platformAccountLabel: text("platform_account_label"),
 		// Ciphertext only. Decryption happens in server/lib/crypto.ts.
@@ -185,15 +192,18 @@ export const connections = pgTable(
 		createdAt: timestamp("created_at", { withTimezone: true })
 			.notNull()
 			.defaultNow(),
+		updatedAt: timestamp("updated_at", { withTimezone: true })
+			.notNull()
+			.defaultNow(),
 		revokedAt: timestamp("revoked_at", { withTimezone: true }),
 	},
 	(t) => ({
 		uniqueConn: uniqueIndex("connections_unique_idx").on(
-			t.establishmentId,
+			t.organizationId,
 			t.platform,
 			t.platformAccountId,
 		),
-		estIdx: index("connections_est_idx").on(t.establishmentId),
+		orgIdx: index("connections_org_idx").on(t.organizationId),
 	}),
 );
 
@@ -303,6 +313,7 @@ export const auditLog = pgTable(
 export const organizationsRelations = relations(organizations, ({ many }) => ({
 	establishments: many(establishments),
 	memberships: many(organizationMemberships),
+	connections: many(connections),
 }));
 
 export const usersRelations = relations(users, ({ many }) => ({
@@ -330,15 +341,14 @@ export const establishmentsRelations = relations(
 			fields: [establishments.organizationId],
 			references: [organizations.id],
 		}),
-		connections: many(connections),
 		reviews: many(reviews),
 	}),
 );
 
 export const connectionsRelations = relations(connections, ({ one }) => ({
-	establishment: one(establishments, {
-		fields: [connections.establishmentId],
-		references: [establishments.id],
+	organization: one(organizations, {
+		fields: [connections.organizationId],
+		references: [organizations.id],
 	}),
 }));
 
