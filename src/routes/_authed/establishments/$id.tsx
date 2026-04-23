@@ -4,6 +4,7 @@ import {
 	EstablishmentForm,
 	type EstablishmentFormValues,
 } from "#/components/establishments/establishment-form";
+import { GbpLinkPanel } from "#/components/establishments/gbp-link-panel";
 import {
 	getEstablishment,
 	updateEstablishmentFn,
@@ -110,6 +111,8 @@ function EditEstablishmentForm({
 					}}
 				/>
 			</div>
+
+			<GbpLinkPanel establishment={establishment} />
 
 			<section className="space-y-3 rounded-lg border border-red-200 bg-white p-6">
 				<div>

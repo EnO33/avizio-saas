@@ -147,6 +147,12 @@ export const establishments = pgTable(
 		languageCode: text("language_code").notNull().default("fr"),
 		notifyOnLowRating: boolean("notify_on_low_rating").notNull().default(true),
 		lowRatingThreshold: integer("low_rating_threshold").notNull().default(3),
+		// Full Google Business Profile location resource name —
+		// "accounts/{aid}/locations/{lid}". Cached title alongside so the UI
+		// doesn't have to re-fetch from Google to render the linked label.
+		// Both null until the user maps this establishment via the picker.
+		googleLocationName: text("google_location_name"),
+		googleLocationTitle: text("google_location_title"),
 		createdAt: timestamp("created_at", { withTimezone: true })
 			.notNull()
 			.defaultNow(),

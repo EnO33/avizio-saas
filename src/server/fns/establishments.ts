@@ -8,9 +8,16 @@ import {
 	deleteEstablishment,
 	type EstablishmentSummary,
 	getEstablishmentForOrg,
+	linkEstablishmentGoogleLocation,
 	listEstablishmentsForOrg,
+	unlinkEstablishmentGoogleLocation,
 	updateEstablishment,
 } from "#/server/db/queries/establishments";
+import {
+	getAccessTokenForOrg,
+	listAccounts,
+	listLocations,
+} from "#/server/integrations/google-business";
 
 const BUSINESS_TYPE_VALUES = [
 	"restaurant",
@@ -232,4 +239,208 @@ export const deleteEstablishmentFn = createServerFn({ method: "POST" })
 			"Establishment deleted",
 		);
 		return { kind: "ok" };
+	});
+
+// ── Google Business Profile location picker ────────────────────────────────
+
+export type GbpLocationChoice = {
+	readonly locationName: string;
+	readonly locationTitle: string;
+	readonly accountName: string;
+	readonly accountLabel: string | null;
+	readonly address: string | null;
+};
+
+export type ListGbpLocationsResult =
+	| { readonly kind: "ok"; readonly locations: readonly GbpLocationChoice[] }
+	| { readonly kind: "unauthenticated" }
+	| { readonly kind: "no_connection" }
+	| { readonly kind: "insufficient_scope" }
+	| { readonly kind: "connection_revoked" }
+	| { readonly kind: "error" };
+
+function formatAddress(
+	address: {
+		postalCode: string | null;
+		locality: string | null;
+		addressLines: readonly string[];
+	} | null,
+): string | null {
+	if (!address) return null;
+	const street = address.addressLines[0] ?? null;
+	const cityPart = [address.postalCode, address.locality]
+		.filter((s): s is string => Boolean(s))
+		.join(" ");
+	return [street, cityPart].filter((s) => s && s.length > 0).join(", ") || null;
+}
+
+/**
+ * Fetch every Google Business Profile location the current Clerk org has
+ * access to, flattened across all their accounts. Used by the picker on
+ * the establishment edit page. Errors are mapped to UI-displayable kinds
+ * so the component can render a clear empty-state message instead of a
+ * generic "something went wrong".
+ */
+export const listGbpLocationsForPicker = createServerFn().handler(
+	async (): Promise<ListGbpLocationsResult> => {
+		const session = await auth();
+		if (!session.isAuthenticated || !session.orgId) {
+			return { kind: "unauthenticated" };
+		}
+
+		const tokenResult = await getAccessTokenForOrg({
+			organizationId: session.orgId,
+			platform: "google",
+		});
+		if (tokenResult.isErr()) {
+			const e = tokenResult.error;
+			if (e.kind === "no_active_connection") return { kind: "no_connection" };
+			if (e.kind === "missing_refresh_token") return { kind: "no_connection" };
+			if (e.kind === "connection_revoked")
+				return { kind: "connection_revoked" };
+			logger.error(
+				{
+					event: "gbp_picker_token_failed",
+					kind: e.kind,
+					orgId: session.orgId,
+				},
+				"Failed to obtain access token for GBP picker",
+			);
+			return { kind: "error" };
+		}
+
+		const accessToken = tokenResult.value.accessToken;
+		const accountsResult = await listAccounts(accessToken);
+		if (accountsResult.isErr()) {
+			const e = accountsResult.error;
+			if (e.kind === "gbp_insufficient_scope") {
+				return { kind: "insufficient_scope" };
+			}
+			logger.error(
+				{
+					event: "gbp_picker_list_accounts_failed",
+					kind: e.kind,
+					orgId: session.orgId,
+				},
+				"listAccounts failed in picker",
+			);
+			return { kind: "error" };
+		}
+
+		const locations: GbpLocationChoice[] = [];
+		for (const account of accountsResult.value) {
+			const locResult = await listLocations({
+				accessToken,
+				accountName: account.name,
+			});
+			if (locResult.isErr()) {
+				const e = locResult.error;
+				if (e.kind === "gbp_insufficient_scope") {
+					return { kind: "insufficient_scope" };
+				}
+				// Partial failure on one account shouldn't blank the whole picker —
+				// log and keep going with what we have.
+				logger.warn(
+					{
+						event: "gbp_picker_list_locations_failed",
+						accountName: account.name,
+						kind: e.kind,
+					},
+					"listLocations failed for one account, skipping",
+				);
+				continue;
+			}
+			for (const loc of locResult.value) {
+				locations.push({
+					locationName: `${account.name}/${loc.name}`,
+					locationTitle: loc.title,
+					accountName: account.name,
+					accountLabel: account.accountName,
+					address: formatAddress(loc.address),
+				});
+			}
+		}
+
+		return { kind: "ok", locations };
+	},
+);
+
+// ── Link / unlink ──────────────────────────────────────────────────────────
+
+const linkLocationSchema = z.object({
+	id: z.string().min(1),
+	locationName: z.string().min(1),
+	locationTitle: z.string().min(1),
+});
+
+export type LinkGbpLocationResult =
+	| { readonly kind: "ok"; readonly establishment: EstablishmentSummary }
+	| { readonly kind: "unauthenticated" }
+	| { readonly kind: "not_found" }
+	| { readonly kind: "error" };
+
+export const linkGbpLocationFn = createServerFn({ method: "POST" })
+	.inputValidator(linkLocationSchema)
+	.handler(async ({ data }): Promise<LinkGbpLocationResult> => {
+		const session = await auth();
+		if (!session.isAuthenticated || !session.orgId) {
+			return { kind: "unauthenticated" };
+		}
+
+		const result = await linkEstablishmentGoogleLocation({
+			id: data.id,
+			organizationId: session.orgId,
+			googleLocationName: data.locationName,
+			googleLocationTitle: data.locationTitle,
+		});
+		if (result.isErr()) {
+			if (result.error.kind === "db_not_found") return { kind: "not_found" };
+			logger.error(
+				{
+					event: "establishment_link_gbp_failed",
+					kind: result.error.kind,
+					id: data.id,
+				},
+				"Failed to link establishment to GBP location",
+			);
+			return { kind: "error" };
+		}
+
+		logger.info(
+			{
+				event: "establishment_linked_gbp",
+				establishmentId: data.id,
+				locationName: data.locationName,
+			},
+			"Establishment linked to GBP location",
+		);
+		return { kind: "ok", establishment: result.value };
+	});
+
+export const unlinkGbpLocationFn = createServerFn({ method: "POST" })
+	.inputValidator(z.object({ id: z.string().min(1) }))
+	.handler(async ({ data }): Promise<LinkGbpLocationResult> => {
+		const session = await auth();
+		if (!session.isAuthenticated || !session.orgId) {
+			return { kind: "unauthenticated" };
+		}
+
+		const result = await unlinkEstablishmentGoogleLocation({
+			id: data.id,
+			organizationId: session.orgId,
+		});
+		if (result.isErr()) {
+			if (result.error.kind === "db_not_found") return { kind: "not_found" };
+			logger.error(
+				{
+					event: "establishment_unlink_gbp_failed",
+					kind: result.error.kind,
+					id: data.id,
+				},
+				"Failed to unlink establishment from GBP location",
+			);
+			return { kind: "error" };
+		}
+
+		return { kind: "ok", establishment: result.value };
 	});

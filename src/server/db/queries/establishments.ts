@@ -28,6 +28,8 @@ export type EstablishmentSummary = {
 	readonly postalCode: string | null;
 	readonly businessType: BusinessType;
 	readonly languageCode: string;
+	readonly googleLocationName: string | null;
+	readonly googleLocationTitle: string | null;
 	readonly createdAt: Date;
 	readonly updatedAt: Date;
 };
@@ -56,6 +58,8 @@ const SUMMARY_COLUMNS = {
 	postalCode: establishments.postalCode,
 	businessType: establishments.businessType,
 	languageCode: establishments.languageCode,
+	googleLocationName: establishments.googleLocationName,
+	googleLocationTitle: establishments.googleLocationTitle,
 	createdAt: establishments.createdAt,
 	updatedAt: establishments.updatedAt,
 } as const;
@@ -192,4 +196,69 @@ export async function deleteEstablishment(params: {
 	if (rows.isErr()) return err(rows.error);
 	if (rows.value.length === 0) return err({ kind: "db_not_found" });
 	return ok(undefined);
+}
+
+/**
+ * Link an establishment to a Google Business Profile location by storing
+ * the full resource name (e.g. "accounts/123/locations/456") and a cached
+ * display title. Scoped by org so one org can't overwrite another's link.
+ */
+export async function linkEstablishmentGoogleLocation(params: {
+	id: string;
+	organizationId: string;
+	googleLocationName: string;
+	googleLocationTitle: string;
+}): Promise<Result<EstablishmentSummary, DbError>> {
+	const rows = await fromPromise(
+		db
+			.update(establishments)
+			.set({
+				googleLocationName: params.googleLocationName,
+				googleLocationTitle: params.googleLocationTitle,
+				updatedAt: new Date(),
+			})
+			.where(
+				and(
+					eq(establishments.id, params.id),
+					eq(establishments.organizationId, params.organizationId),
+				),
+			)
+			.returning(SUMMARY_COLUMNS),
+		toDbError,
+	);
+	if (rows.isErr()) return err(rows.error);
+	const first = rows.value[0];
+	if (!first) return err({ kind: "db_not_found" });
+	return ok(first);
+}
+
+/**
+ * Clear the Google link on an establishment. Useful when the user wants to
+ * re-map or when the remote location was deleted — leaves the row intact.
+ */
+export async function unlinkEstablishmentGoogleLocation(params: {
+	id: string;
+	organizationId: string;
+}): Promise<Result<EstablishmentSummary, DbError>> {
+	const rows = await fromPromise(
+		db
+			.update(establishments)
+			.set({
+				googleLocationName: null,
+				googleLocationTitle: null,
+				updatedAt: new Date(),
+			})
+			.where(
+				and(
+					eq(establishments.id, params.id),
+					eq(establishments.organizationId, params.organizationId),
+				),
+			)
+			.returning(SUMMARY_COLUMNS),
+		toDbError,
+	);
+	if (rows.isErr()) return err(rows.error);
+	const first = rows.value[0];
+	if (!first) return err({ kind: "db_not_found" });
+	return ok(first);
 }
