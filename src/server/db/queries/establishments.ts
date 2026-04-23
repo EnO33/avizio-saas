@@ -15,6 +15,8 @@ export type BusinessType =
 	| "retail"
 	| "other";
 
+export type Tone = "warm" | "professional" | "direct";
+
 /**
  * Client-safe projection of an establishment. The advanced fields
  * (`brandContext`, `defaultTone`, notification settings) aren't exposed yet
@@ -28,6 +30,8 @@ export type EstablishmentSummary = {
 	readonly postalCode: string | null;
 	readonly businessType: BusinessType;
 	readonly languageCode: string;
+	readonly defaultTone: Tone;
+	readonly brandContext: string | null;
 	readonly googleLocationName: string | null;
 	readonly googleLocationTitle: string | null;
 	readonly createdAt: Date;
@@ -49,6 +53,8 @@ export type UpdateEstablishmentPatch = {
 	readonly postalCode?: string | null | undefined;
 	readonly businessType?: BusinessType | undefined;
 	readonly languageCode?: string | undefined;
+	readonly defaultTone?: Tone | undefined;
+	readonly brandContext?: string | null | undefined;
 };
 
 const SUMMARY_COLUMNS = {
@@ -58,6 +64,8 @@ const SUMMARY_COLUMNS = {
 	postalCode: establishments.postalCode,
 	businessType: establishments.businessType,
 	languageCode: establishments.languageCode,
+	defaultTone: establishments.defaultTone,
+	brandContext: establishments.brandContext,
 	googleLocationName: establishments.googleLocationName,
 	googleLocationTitle: establishments.googleLocationTitle,
 	createdAt: establishments.createdAt,

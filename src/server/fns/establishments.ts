@@ -10,6 +10,7 @@ import {
 	getEstablishmentForOrg,
 	linkEstablishmentGoogleLocation,
 	listEstablishmentsForOrg,
+	type Tone,
 	unlinkEstablishmentGoogleLocation,
 	updateEstablishment,
 } from "#/server/db/queries/establishments";
@@ -30,6 +31,12 @@ const BUSINESS_TYPE_VALUES = [
 	"other",
 ] as const satisfies readonly BusinessType[];
 
+const TONE_VALUES = [
+	"warm",
+	"professional",
+	"direct",
+] as const satisfies readonly Tone[];
+
 const nameSchema = z.string().trim().min(1).max(100);
 const citySchema = z.string().trim().min(1).max(100);
 const postalCodeSchema = z
@@ -43,6 +50,15 @@ const languageCodeSchema = z
 	.string()
 	.regex(/^[a-z]{2}$/, "Code langue sur 2 lettres (ex. fr)")
 	.default("fr");
+const toneSchema = z.enum(TONE_VALUES);
+// 5 000 chars is enough for a few paragraphs of brand voice + do-not-mention
+// guardrails without running into prompt-length issues when we inject it.
+const brandContextSchema = z
+	.string()
+	.trim()
+	.max(5000, "Contexte trop long (5 000 caractères max)")
+	.nullable()
+	.transform((v) => (v && v.length > 0 ? v : null));
 
 const createInputSchema = z.object({
 	name: nameSchema,
@@ -59,6 +75,8 @@ const updateInputSchema = z.object({
 	postalCode: postalCodeSchema.optional(),
 	businessType: businessTypeSchema.optional(),
 	languageCode: languageCodeSchema.optional(),
+	defaultTone: toneSchema.optional(),
+	brandContext: brandContextSchema.optional(),
 });
 
 const idInputSchema = z.object({ id: z.string().min(1) });
