@@ -87,11 +87,21 @@ export async function generateMessage(
 	});
 }
 
+/**
+ * Message fragment Anthropic ships in the 400 body when the workspace has
+ * no credits left. Matching on it lets us surface a targeted UX ("top up
+ * your console") instead of the generic "unexpected API error".
+ */
+const NO_CREDITS_MARKER = "credit balance is too low";
+
 function mapAnthropicError(e: unknown): AIError {
 	if (e instanceof RateLimitError) {
 		return { kind: "ai_rate_limited", retryAfterMs: 60_000 };
 	}
 	if (e instanceof APIError) {
+		if (e.status === 400 && e.message.includes(NO_CREDITS_MARKER)) {
+			return { kind: "ai_no_credits" };
+		}
 		return {
 			kind: "ai_api_error",
 			status: e.status ?? 0,
