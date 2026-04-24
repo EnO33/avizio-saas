@@ -15,60 +15,204 @@ import { Badge } from "#/components/ui/badge";
 import { Button } from "#/components/ui/button";
 import { Card } from "#/components/ui/card";
 import { Logo } from "#/components/ui/logo";
+import { PlatformIcon } from "#/components/ui/platform-icon";
 import { Stars } from "#/components/ui/stars";
 
 /**
- * Hero de la landing — pill d'accroche, titre serif géant avec
- * italiques terracotta sur les deux dernières lignes, double CTA,
- * et aperçu produit en mockup statique pour que le lecteur visualise
- * l'interface avant même de s'inscrire.
+ * Hero de la landing — grille 2 colonnes en desktop (texte à gauche,
+ * visuel flottant à droite), qui se recolle en 1 colonne texte-seul
+ * sous `lg:` pour que le mobile reste punchy. Pill d'accroche, titre
+ * serif géant avec italiques terracotta sur les deux dernières lignes,
+ * double CTA, et aperçu produit en mockup statique au-dessous pour
+ * que le lecteur visualise l'interface avant même de s'inscrire.
  */
 export function Hero() {
 	return (
 		<section className="mx-auto max-w-[1200px] px-7 pt-[88px] pb-20">
-			<div className="max-w-[780px]">
-				<div className="mb-7 inline-flex items-center gap-2 rounded-full border border-line bg-paper px-3 py-1 text-[11.5px] text-ink-soft">
-					<span className="size-1.5 rounded-full bg-accent" />
-					Pensé pour les commerces de proximité français
-				</div>
-				<h1
-					className="m-0 font-serif font-normal text-ink leading-[1.02] tracking-[-0.03em]"
-					style={{ fontSize: "clamp(44px, 6vw, 84px)" }}
-				>
-					Répondez à chaque avis,
-					<br />
-					<span className="text-accent-ink italic">comme si vous aviez</span>
-					<br />
-					<span className="text-accent-ink italic">tout votre temps.</span>
-				</h1>
-				<p className="mt-7 max-w-[560px] text-[18px] text-ink-soft leading-[1.55]">
-					Avizio rédige une réponse personnalisée pour chaque avis Google,
-					TripAdvisor et Trustpilot. Vous relisez, ajustez, publiez — en deux
-					minutes, pas vingt.
-				</p>
-				<div className="mt-9 flex flex-wrap items-center gap-3">
-					<Link to="/sign-up">
-						<Button
-							variant="accent"
-							size="lg"
-							iconRight={<ArrowRight size={16} strokeWidth={1.75} />}
-						>
-							Commencer l'essai · 14 jours
-						</Button>
-					</Link>
-					<a href="#features">
-						<Button variant="ghost" size="lg">
-							Voir comment ça marche
-						</Button>
-					</a>
-					<span className="text-[12px] text-ink-mute">
+			<div className="grid grid-cols-1 items-center gap-14 lg:grid-cols-[minmax(0,1fr)_minmax(0,460px)]">
+				<div>
+					<div className="mb-7 inline-flex items-center gap-2 rounded-full border border-line bg-paper px-3 py-1 text-[11.5px] text-ink-soft">
+						<span className="size-1.5 rounded-full bg-accent" />
+						Pensé pour les commerces de proximité français
+					</div>
+					<h1
+						className="m-0 font-serif font-normal text-ink leading-[1.02] tracking-[-0.03em]"
+						style={{ fontSize: "clamp(44px, 5.2vw, 76px)" }}
+					>
+						Répondez à chaque avis,
+						<br />
+						<span className="text-accent-ink italic">comme si vous aviez</span>
+						<br />
+						<span className="text-accent-ink italic">tout votre temps.</span>
+					</h1>
+					<p className="mt-7 max-w-[520px] text-[17px] text-ink-soft leading-[1.55]">
+						Avizio rédige une réponse personnalisée pour chaque avis Google,
+						TripAdvisor et Trustpilot. Vous relisez, ajustez, publiez — en deux
+						minutes, pas vingt.
+					</p>
+					<div className="mt-9 flex flex-wrap items-center gap-3">
+						<Link to="/sign-up">
+							<Button
+								variant="accent"
+								size="lg"
+								iconRight={<ArrowRight size={16} strokeWidth={1.75} />}
+							>
+								Commencer l'essai · 14 jours
+							</Button>
+						</Link>
+						<a href="#demo">
+							<Button variant="ghost" size="lg">
+								Voir une démo
+							</Button>
+						</a>
+					</div>
+					<div className="mt-4 text-[12px] text-ink-mute">
 						Sans carte bancaire · Résiliation en 1 clic
-					</span>
+					</div>
 				</div>
+
+				<HeroVisual />
 			</div>
 
 			<HeroProductMock />
 		</section>
+	);
+}
+
+/*
+  Visuel droit de la hero — deux cartes flottantes qui racontent le flow
+  avis entrant → brouillon IA, avec une pastille "AVIZIO · 8 SEC" qui
+  matérialise l'étape intermédiaire. Caché en `< lg:` parce que la mise
+  en scène demande ~460px de large + une hauteur dédiée : en mobile le
+  texte porte seul le message, ce qui reste plus lisible qu'un visuel
+  compressé.
+*/
+function HeroVisual() {
+	return (
+		<div className="relative hidden h-[520px] lg:block">
+			{/* Halo ambient — radial gradient accent-soft qui sort du cadre. */}
+			<div
+				aria-hidden="true"
+				className="pointer-events-none absolute z-0"
+				style={{
+					inset: -40,
+					background:
+						"radial-gradient(circle at 60% 40%, oklch(0.94 0.06 50 / 0.55) 0%, transparent 60%)",
+				}}
+			/>
+
+			{/* Chip meta en haut à droite — contexte établissement. */}
+			<div
+				className="absolute top-0 right-[30px] z-[1] inline-flex items-center gap-1.5 rounded-full border border-line-soft bg-paper px-2.5 py-1.5 font-mono text-[10.5px] text-ink-mute shadow-sm"
+				style={{ letterSpacing: "0.06em" }}
+			>
+				<span className="size-[5px] rounded-full bg-green" />
+				LA MAISON PLÉIADE · LYON
+			</div>
+
+			{/* Card 1 — avis entrant Google. */}
+			<div
+				className="absolute top-[10px] left-0 z-[2] w-[330px] rounded-[16px] border border-line-soft bg-paper p-5"
+				style={{
+					boxShadow:
+						"0 20px 40px -24px rgba(60,40,20,0.18), 0 2px 6px rgba(60,40,20,0.06)",
+					transform: "rotate(-2deg)",
+				}}
+			>
+				<div className="mb-3 flex items-center gap-2.5">
+					<PlatformIcon platform="google" size={22} />
+					<div
+						className="font-mono text-[11px] text-ink-mute"
+						style={{ letterSpacing: "0.06em" }}
+					>
+						GOOGLE · IL Y A 2 H
+					</div>
+				</div>
+				<div className="mb-2.5 flex items-center gap-2.5">
+					<Avatar initial="C" size={34} />
+					<div className="min-w-0">
+						<div className="font-medium text-[13px]">Claire M.</div>
+						<div className="mt-0.5">
+							<Stars value={5} size={11} />
+						</div>
+					</div>
+				</div>
+				<p className="m-0 text-[12.5px] text-ink-soft leading-[1.55]">
+					« Soirée <em>magnifique</em> pour nos 10 ans de mariage. Le chef est
+					passé nous saluer — un vrai moment. On reviendra c'est certain ! »
+				</p>
+			</div>
+
+			{/* Pastille de flow — matérialise l'étape IA entre les deux cartes. */}
+			<div
+				className="absolute top-[212px] left-[150px] z-[3] inline-flex items-center gap-1.5 rounded-full bg-ink px-2.5 py-1.5 font-medium font-mono text-[11px]"
+				style={{
+					color: "oklch(0.98 0.012 85)",
+					letterSpacing: "0.04em",
+					boxShadow: "0 6px 14px rgba(60,40,20,0.18)",
+				}}
+			>
+				<span className="inline-flex size-[14px] items-center justify-center rounded-full bg-accent">
+					<Sparkles
+						size={9}
+						strokeWidth={1.75}
+						className="text-[color:oklch(0.98_0.012_85)]"
+					/>
+				</span>
+				AVIZIO · 8 SEC
+			</div>
+
+			{/* Card 2 — brouillon IA. */}
+			<div
+				className="absolute top-[235px] right-0 z-[4] w-[360px] rounded-[16px] border bg-paper p-[22px]"
+				style={{
+					borderColor: "oklch(0.88 0.04 50)",
+					boxShadow:
+						"0 28px 50px -24px rgba(170,70,40,0.22), 0 2px 6px rgba(60,40,20,0.06)",
+					transform: "rotate(1.5deg)",
+				}}
+			>
+				<div className="mb-3.5 flex items-center justify-between">
+					<Badge tone="accent">
+						<Sparkles size={11} strokeWidth={1.75} />
+						Brouillon · ton chaleureux
+					</Badge>
+					<span
+						className="font-mono text-[10px] text-ink-mute"
+						style={{ letterSpacing: "0.04em" }}
+					>
+						v1 · 312 car.
+					</span>
+				</div>
+				<div className="my-1 mb-4 border-accent border-l-[2px] pl-3.5 font-serif text-[14.5px] text-ink italic leading-[1.55]">
+					Chère Claire,
+					<br />
+					Fêter vos{" "}
+					<span
+						className="rounded-[3px] px-1 py-[1px] not-italic"
+						style={{ background: "oklch(0.94 0.04 50)" }}
+					>
+						10 ans de mariage
+					</span>{" "}
+					à La Maison Pléiade — quel honneur. Sébastien sera touché de relire
+					votre message ; il dira à l'équipe que le moment partagé comptait
+					aussi beaucoup…
+				</div>
+				<div className="flex gap-1.5">
+					<Button variant="ghost" size="sm">
+						Ajuster
+					</Button>
+					<Button
+						variant="accent"
+						size="sm"
+						icon={<Check size={14} strokeWidth={1.75} />}
+						className="ml-auto"
+					>
+						Publier sur Google
+					</Button>
+				</div>
+			</div>
+		</div>
 	);
 }
 
@@ -82,17 +226,14 @@ export function Hero() {
 */
 function HeroProductMock() {
 	return (
-		<div className="relative mt-[72px]">
+		<div id="demo" className="relative mt-[72px] scroll-mt-24">
 			<Card
 				padding={0}
 				className="overflow-hidden rounded-[20px] shadow-[var(--shadow-lg)]"
 			>
-				<div
-					className="grid min-h-[420px] bg-paper"
-					style={{ gridTemplateColumns: "240px 1fr 1fr" }}
-				>
+				<div className="grid min-h-[420px] grid-cols-1 bg-paper md:grid-cols-[200px_1fr_1fr] lg:grid-cols-[240px_1fr_1fr]">
 					{/* Sidebar mock */}
-					<div className="border-line-soft border-r bg-bg-deep p-5">
+					<div className="border-line-soft border-b bg-bg-deep p-5 md:border-r md:border-b-0">
 						<Logo size={18} />
 						<div className="mt-7 flex flex-col gap-0.5">
 							<MockNavItem icon={Home} label="Tableau de bord" active={false} />
@@ -109,7 +250,7 @@ function HeroProductMock() {
 					</div>
 
 					{/* Inbox mock */}
-					<div className="border-line-soft border-r p-5">
+					<div className="border-line-soft border-b p-5 md:border-r md:border-b-0">
 						<div className="mb-3.5 font-mono text-[11px] text-ink-mute uppercase tracking-[0.06em]">
 							À traiter · 12
 						</div>
