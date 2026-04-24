@@ -1,13 +1,15 @@
 import { useSignIn } from "@clerk/tanstack-react-start";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { ArrowRight } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { AuthLayout } from "#/components/auth/auth-layout";
 import { clerkErrorToMessage } from "#/components/auth/clerk-error";
-import { Divider } from "#/components/auth/divider";
-import { GoogleButton } from "#/components/auth/google-button";
-import { TextField } from "#/components/auth/text-field";
+import { SsoRow } from "#/components/auth/sso-row";
+import { Button } from "#/components/ui/button";
+import { Field } from "#/components/ui/field";
+import { Input } from "#/components/ui/input";
 import { redirectIfSignedIn } from "#/server/fns/auth-guards";
 
 const signInSchema = z.object({
@@ -30,7 +32,6 @@ function SignInPage() {
 		resolver: zodResolver(signInSchema),
 		defaultValues: { email: "", password: "" },
 	});
-
 	const topLevelError = form.formState.errors.root?.message;
 
 	const onSubmit = async ({ email, password }: SignInInput) => {
@@ -51,12 +52,10 @@ function SignInPage() {
 		if (signIn.status === "needs_second_factor") {
 			form.setError("root", {
 				message:
-					"Authentification à deux facteurs requise — pas encore supportée côté UI. Contacte le support.",
+					"Authentification à deux facteurs requise — pas encore supportée côté UI. Contactez le support.",
 			});
 			return;
 		}
-		// Trust the password result: if no error, finalize. `signIn.status`
-		// can be stale in this React tick, so we don't gate on it.
 		const finalizeResult = await signIn.finalize();
 		if (finalizeResult.error) {
 			form.setError("root", {
@@ -67,20 +66,14 @@ function SignInPage() {
 			});
 			return;
 		}
-		// Hard reload so the next request carries the freshly-set Clerk
-		// cookies — `/dashboard` then authenticates server-side via
-		// `_authed.beforeLoad` and renders. Clerk's built-in `navigate` is a
-		// no-op for custom flows, so we own the redirect here.
+		// Hard reload pour que `/dashboard` authentifie via les cookies
+		// Clerk fraîchement set. Les custom flows ne reçoivent pas la
+		// navigation Clerk built-in.
 		window.location.href = "/dashboard";
 	};
 
 	const onGoogle = async () => {
 		form.clearErrors("root");
-		// `signIn.sso()` redirects the browser on success; a rejected promise
-		// means the SDK couldn't start the flow (stale session, network, etc.).
-		// Without this catch the error vanishes into an unhandled rejection and
-		// the button looks inert — biome allows try/catch at this
-		// external-lib boundary.
 		try {
 			await signIn.sso({
 				strategy: "oauth_google",
@@ -91,7 +84,7 @@ function SignInPage() {
 			form.setError("root", {
 				message: clerkErrorToMessage(
 					e,
-					"Connexion Google indisponible. Réessaie dans un instant ou utilise l'email.",
+					"Connexion Google indisponible. Réessayez dans un instant ou utilisez l'email.",
 				),
 			});
 		}
@@ -99,66 +92,80 @@ function SignInPage() {
 
 	return (
 		<AuthLayout
-			title="Connexion"
-			subtitle="Content de vous revoir."
+			mode="sign-in"
+			kicker="Se connecter"
+			heading="Content de vous revoir."
+			subtitle="Vos avis vous attendent."
 			footer={
 				<>
-					Pas encore de compte ?{" "}
+					Pas encore de compte ?
 					<Link
 						to="/sign-up"
-						className="font-medium text-amber-700 hover:underline"
+						className="font-medium text-accent-ink hover:underline"
 					>
-						Créer un compte
+						Créer un espace
 					</Link>
 				</>
 			}
 		>
-			<div className="space-y-4">
-				<GoogleButton onClick={onGoogle} disabled={isFetching} />
-				<Divider />
-				<form
-					onSubmit={form.handleSubmit(onSubmit)}
-					className="space-y-4"
-					noValidate
-				>
-					<TextField
-						label="Email"
+			<SsoRow
+				label="Continuer avec Google"
+				onClick={onGoogle}
+				disabled={isFetching}
+			/>
+			<form
+				onSubmit={form.handleSubmit(onSubmit)}
+				className="flex flex-col gap-3.5"
+				noValidate
+			>
+				<Field label="Email">
+					<Input
 						type="email"
 						autoComplete="email"
+						placeholder="helene@pleiade.fr"
 						{...form.register("email")}
-						error={form.formState.errors.email?.message}
 					/>
-					<div>
-						<TextField
-							label="Mot de passe"
-							type="password"
-							autoComplete="current-password"
-							{...form.register("password")}
-							error={form.formState.errors.password?.message}
-						/>
-						<div className="mt-2 text-right">
-							<Link
-								to="/forgot-password"
-								className="text-neutral-600 text-xs hover:text-amber-700 hover:underline"
-							>
-								Mot de passe oublié ?
-							</Link>
-						</div>
-					</div>
-					{topLevelError ? (
-						<p className="rounded-md bg-red-50 px-3 py-2 text-red-700 text-sm">
-							{topLevelError}
+					{form.formState.errors.email?.message ? (
+						<p className="mt-1 text-[12px] text-[oklch(0.5_0.12_25)]">
+							{form.formState.errors.email.message}
 						</p>
 					) : null}
-					<button
-						type="submit"
-						disabled={isFetching}
-						className="w-full rounded-md bg-neutral-900 py-2.5 font-medium text-sm text-white transition hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-50"
-					>
-						{isFetching ? "Connexion…" : "Se connecter"}
-					</button>
-				</form>
-			</div>
+				</Field>
+				<Field label="Mot de passe">
+					<Input
+						type="password"
+						autoComplete="current-password"
+						placeholder="••••••••"
+						{...form.register("password")}
+					/>
+					{form.formState.errors.password?.message ? (
+						<p className="mt-1 text-[12px] text-[oklch(0.5_0.12_25)]">
+							{form.formState.errors.password.message}
+						</p>
+					) : null}
+				</Field>
+				<Link
+					to="/forgot-password"
+					className="-mt-1 self-start text-[12.5px] text-accent-ink hover:underline"
+				>
+					Mot de passe oublié ?
+				</Link>
+				{topLevelError ? (
+					<p className="rounded-md bg-[oklch(0.95_0.03_25)] px-3 py-2 text-[12.5px] text-[oklch(0.4_0.12_25)]">
+						{topLevelError}
+					</p>
+				) : null}
+				<Button
+					variant="accent"
+					size="lg"
+					type="submit"
+					className="mt-2 w-full"
+					iconRight={<ArrowRight size={14} strokeWidth={1.75} />}
+					disabled={isFetching}
+				>
+					{isFetching ? "Connexion…" : "Se connecter"}
+				</Button>
+			</form>
 		</AuthLayout>
 	);
 }

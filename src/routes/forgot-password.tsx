@@ -1,12 +1,16 @@
 import { useSignIn } from "@clerk/tanstack-react-start";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { ArrowRight, Bell } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { AuthLayout } from "#/components/auth/auth-layout";
 import { clerkErrorToMessage } from "#/components/auth/clerk-error";
-import { TextField } from "#/components/auth/text-field";
+import { Button } from "#/components/ui/button";
+import { Field } from "#/components/ui/field";
+import { Input } from "#/components/ui/input";
+import { OtpInput } from "#/components/ui/otp-input";
 import { redirectIfSignedIn } from "#/server/fns/auth-guards";
 
 const emailSchema = z.object({
@@ -22,12 +26,8 @@ const resetSchema = z
 		password: z
 			.string()
 			.min(8, "Le mot de passe doit faire au moins 8 caractères"),
-		passwordConfirm: z.string(),
 	})
-	.refine((data) => data.password === data.passwordConfirm, {
-		message: "Les mots de passe ne correspondent pas",
-		path: ["passwordConfirm"],
-	});
+	.strict();
 
 type EmailInput = z.infer<typeof emailSchema>;
 type ResetInput = z.infer<typeof resetSchema>;
@@ -49,7 +49,7 @@ function ForgotPasswordPage() {
 
 	const resetForm = useForm<ResetInput>({
 		resolver: zodResolver(resetSchema),
-		defaultValues: { code: "", password: "", passwordConfirm: "" },
+		defaultValues: { code: "", password: "" },
 	});
 
 	const onSubmitEmail = async ({ email }: EmailInput) => {
@@ -110,112 +110,160 @@ function ForgotPasswordPage() {
 			});
 			return;
 		}
-		// Hard reload so `/dashboard` authenticates via the freshly-set
-		// Clerk cookies. Custom flows don't get auto-navigation from Clerk.
+		// Hard reload pour que `/dashboard` authentifie via les cookies
+		// Clerk fraîchement set. Les custom flows n'ont pas d'auto-nav.
 		window.location.href = "/dashboard";
 	};
 
 	if (step === "reset") {
-		const rootError = resetForm.formState.errors.root?.message;
 		return (
-			<AuthLayout
-				title="Nouveau mot de passe"
-				subtitle="Entre le code reçu par email et ton nouveau mot de passe."
-				footer={
-					<>
-						Tu n'as rien reçu ?{" "}
-						<button
-							type="button"
-							onClick={() => setStep("request")}
-							className="font-medium text-amber-700 hover:underline"
-						>
-							Renvoyer un code
-						</button>
-					</>
-				}
-			>
-				<form
-					onSubmit={resetForm.handleSubmit(onSubmitReset)}
-					className="space-y-4"
-					noValidate
-				>
-					<TextField
-						label="Code de vérification"
-						inputMode="numeric"
-						autoComplete="one-time-code"
-						maxLength={6}
-						{...resetForm.register("code")}
-						error={resetForm.formState.errors.code?.message}
-					/>
-					<TextField
-						label="Nouveau mot de passe"
-						type="password"
-						autoComplete="new-password"
-						{...resetForm.register("password")}
-						error={resetForm.formState.errors.password?.message}
-					/>
-					<TextField
-						label="Confirmer le mot de passe"
-						type="password"
-						autoComplete="new-password"
-						{...resetForm.register("passwordConfirm")}
-						error={resetForm.formState.errors.passwordConfirm?.message}
-					/>
-					{rootError ? (
-						<p className="rounded-md bg-red-50 px-3 py-2 text-red-700 text-sm">
-							{rootError}
-						</p>
-					) : null}
-					<button
-						type="submit"
-						disabled={isFetching}
-						className="w-full rounded-md bg-neutral-900 py-2.5 font-medium text-sm text-white transition hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-50"
-					>
-						{isFetching ? "Enregistrement…" : "Réinitialiser"}
-					</button>
-				</form>
-			</AuthLayout>
+			<ResetStep
+				form={resetForm}
+				isFetching={isFetching}
+				onSubmit={onSubmitReset}
+				onResend={() => void signIn.resetPasswordEmailCode.sendCode()}
+			/>
 		);
 	}
 
 	const rootError = emailForm.formState.errors.root?.message;
 	return (
 		<AuthLayout
-			title="Mot de passe oublié"
-			subtitle="On t'envoie un code pour en créer un nouveau."
+			mode="forgot-password"
+			kicker="Mot de passe oublié"
+			heading="On vous remet sur pied."
+			subtitle="Entrez votre email — on vous envoie un code à 6 chiffres."
 			footer={
-				<Link
-					to="/sign-in"
-					className="font-medium text-amber-700 hover:underline"
-				>
-					Retour à la connexion
-				</Link>
+				<>
+					Vous vous souvenez ?
+					<Link
+						to="/sign-in"
+						className="font-medium text-accent-ink hover:underline"
+					>
+						Se connecter
+					</Link>
+				</>
 			}
 		>
 			<form
 				onSubmit={emailForm.handleSubmit(onSubmitEmail)}
-				className="space-y-4"
+				className="flex flex-col gap-3.5"
 				noValidate
 			>
-				<TextField
-					label="Email"
-					type="email"
-					autoComplete="email"
-					{...emailForm.register("email")}
-					error={emailForm.formState.errors.email?.message}
-				/>
+				<Field label="Email">
+					<Input
+						type="email"
+						autoComplete="email"
+						placeholder="helene@pleiade.fr"
+						{...emailForm.register("email")}
+					/>
+					{emailForm.formState.errors.email?.message ? (
+						<p className="mt-1 text-[12px] text-[oklch(0.5_0.12_25)]">
+							{emailForm.formState.errors.email.message}
+						</p>
+					) : null}
+				</Field>
 				{rootError ? (
-					<p className="rounded-md bg-red-50 px-3 py-2 text-red-700 text-sm">
+					<p className="rounded-md bg-[oklch(0.95_0.03_25)] px-3 py-2 text-[12.5px] text-[oklch(0.4_0.12_25)]">
 						{rootError}
 					</p>
 				) : null}
-				<button
+				<Button
+					variant="accent"
+					size="lg"
 					type="submit"
+					className="mt-2 w-full"
+					iconRight={<ArrowRight size={14} strokeWidth={1.75} />}
 					disabled={isFetching}
-					className="w-full rounded-md bg-neutral-900 py-2.5 font-medium text-sm text-white transition hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-50"
 				>
 					{isFetching ? "Envoi…" : "Envoyer le code"}
-				</button>
+				</Button>
+			</form>
+		</AuthLayout>
+	);
+}
+
+type ResetStepProps = {
+	readonly form: ReturnType<typeof useForm<ResetInput>>;
+	readonly isFetching: boolean;
+	readonly onSubmit: (values: ResetInput) => Promise<void>;
+	readonly onResend: () => void;
+};
+
+function ResetStep({ form, isFetching, onSubmit, onResend }: ResetStepProps) {
+	const rootError = form.formState.errors.root?.message;
+	return (
+		<AuthLayout
+			mode="forgot-password"
+			kicker="Nouveau mot de passe"
+			heading={
+				<>
+					Code <span className="text-accent-ink italic">envoyé.</span>
+				</>
+			}
+			subtitle="Saisissez le code reçu par email, puis choisissez un nouveau mot de passe."
+			footer={
+				<>
+					Pas reçu ?
+					<button
+						type="button"
+						onClick={onResend}
+						className="cursor-pointer border-none bg-transparent p-0 font-medium text-accent-ink hover:underline"
+					>
+						Renvoyer un code
+					</button>
+				</>
+			}
+		>
+			<form
+				onSubmit={form.handleSubmit(onSubmit)}
+				className="flex flex-col gap-[18px]"
+				noValidate
+			>
+				<Field label="Code à 6 chiffres">
+					<OtpInput
+						value={form.watch("code")}
+						onChange={(v) => form.setValue("code", v)}
+						autoFocus
+					/>
+					{form.formState.errors.code?.message ? (
+						<p className="mt-1 text-[12px] text-[oklch(0.5_0.12_25)]">
+							{form.formState.errors.code.message}
+						</p>
+					) : null}
+				</Field>
+				<Field label="Nouveau mot de passe">
+					<Input
+						type="password"
+						autoComplete="new-password"
+						placeholder="••••••••"
+						{...form.register("password")}
+					/>
+					{form.formState.errors.password?.message ? (
+						<p className="mt-1 text-[12px] text-[oklch(0.5_0.12_25)]">
+							{form.formState.errors.password.message}
+						</p>
+					) : null}
+				</Field>
+				<div className="flex items-center gap-2 rounded-md bg-bg-deep px-3 py-2.5 text-[12px] text-ink-soft">
+					<Bell size={13} strokeWidth={1.75} />
+					Le code expire dans 15 minutes.
+				</div>
+				{rootError ? (
+					<p className="rounded-md bg-[oklch(0.95_0.03_25)] px-3 py-2 text-[12.5px] text-[oklch(0.4_0.12_25)]">
+						{rootError}
+					</p>
+				) : null}
+				<Button
+					variant="accent"
+					size="lg"
+					type="submit"
+					className="mt-1 w-full"
+					iconRight={<ArrowRight size={14} strokeWidth={1.75} />}
+					disabled={isFetching}
+				>
+					{isFetching ? "Enregistrement…" : "Réinitialiser le mot de passe"}
+				</Button>
 			</form>
 		</AuthLayout>
 	);

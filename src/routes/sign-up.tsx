@@ -1,13 +1,16 @@
 import { useSignUp } from "@clerk/tanstack-react-start";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { ArrowRight, Bell } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { AuthLayout } from "#/components/auth/auth-layout";
 import { clerkErrorToMessage } from "#/components/auth/clerk-error";
-import { Divider } from "#/components/auth/divider";
-import { GoogleButton } from "#/components/auth/google-button";
-import { TextField } from "#/components/auth/text-field";
+import { SsoRow } from "#/components/auth/sso-row";
+import { Button } from "#/components/ui/button";
+import { Field } from "#/components/ui/field";
+import { Input } from "#/components/ui/input";
+import { OtpInput } from "#/components/ui/otp-input";
 import { redirectIfSignedIn } from "#/server/fns/auth-guards";
 
 const signUpSchema = z
@@ -23,15 +26,7 @@ const signUpSchema = z
 		path: ["passwordConfirm"],
 	});
 
-const verificationSchema = z.object({
-	code: z
-		.string()
-		.length(6, "Le code fait 6 chiffres")
-		.regex(/^\d+$/, "Chiffres uniquement"),
-});
-
 type SignUpInput = z.infer<typeof signUpSchema>;
-type VerificationInput = z.infer<typeof verificationSchema>;
 
 export const Route = createFileRoute("/sign-up")({
 	beforeLoad: async () => redirectIfSignedIn(),
@@ -45,11 +40,6 @@ function SignUpPage() {
 	const signUpForm = useForm<SignUpInput>({
 		resolver: zodResolver(signUpSchema),
 		defaultValues: { email: "", password: "", passwordConfirm: "" },
-	});
-
-	const verificationForm = useForm<VerificationInput>({
-		resolver: zodResolver(verificationSchema),
-		defaultValues: { code: "" },
 	});
 
 	const needsVerification =
@@ -72,42 +62,8 @@ function SignUpPage() {
 		await signUp.verifications.sendEmailCode();
 	};
 
-	const onSubmitVerification = async ({ code }: VerificationInput) => {
-		verificationForm.clearErrors("root");
-		const verifyResult = await signUp.verifications.verifyEmailCode({ code });
-		if (verifyResult.error) {
-			verificationForm.setError("root", {
-				message: clerkErrorToMessage(
-					verifyResult.error,
-					"Code invalide. Réessayez.",
-				),
-			});
-			return;
-		}
-		// Trust the verify result — `signUp.status` can be stale in this tick.
-		const finalizeResult = await signUp.finalize();
-		if (finalizeResult.error) {
-			verificationForm.setError("root", {
-				message: clerkErrorToMessage(
-					finalizeResult.error,
-					"Impossible de finaliser l'inscription.",
-				),
-			});
-			return;
-		}
-		// Hard reload so the next request carries the freshly-set Clerk
-		// cookies. Nouveaux inscrits → `/onboarding` pour le flow guidé
-		// (org + établissement + Google). Clerk's built-in `navigate` est
-		// no-op en custom flow donc on route ici.
-		window.location.href = "/onboarding";
-	};
-
 	const onGoogle = async () => {
 		signUpForm.clearErrors("root");
-		// `signUp.sso()` redirects on success; a rejected promise means the
-		// SDK couldn't start the flow (stale session, network, etc.). Without
-		// this catch the failure vanishes into an unhandled rejection — biome
-		// allows try/catch at this external-lib boundary.
 		try {
 			await signUp.sso({
 				strategy: "oauth_google",
@@ -125,47 +81,12 @@ function SignUpPage() {
 	};
 
 	if (needsVerification) {
-		const codeError = verificationForm.formState.errors.code?.message;
-		const rootError = verificationForm.formState.errors.root?.message;
 		return (
-			<AuthLayout
-				title="Vérifie ton email"
-				subtitle="Un code à 6 chiffres t'a été envoyé. Rentre-le pour finaliser ton compte."
-			>
-				<form
-					onSubmit={verificationForm.handleSubmit(onSubmitVerification)}
-					className="space-y-4"
-					noValidate
-				>
-					<TextField
-						label="Code de vérification"
-						inputMode="numeric"
-						autoComplete="one-time-code"
-						maxLength={6}
-						{...verificationForm.register("code")}
-						error={codeError}
-					/>
-					{rootError ? (
-						<p className="rounded-md bg-red-50 px-3 py-2 text-red-700 text-sm">
-							{rootError}
-						</p>
-					) : null}
-					<button
-						type="submit"
-						disabled={isFetching}
-						className="w-full rounded-md bg-neutral-900 py-2.5 font-medium text-sm text-white transition hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-50"
-					>
-						{isFetching ? "Vérification…" : "Vérifier"}
-					</button>
-					<button
-						type="button"
-						onClick={() => signUp.verifications.sendEmailCode()}
-						className="w-full text-center text-neutral-600 text-sm hover:text-amber-700 hover:underline"
-					>
-						Renvoyer le code
-					</button>
-				</form>
-			</AuthLayout>
+			<VerificationStep
+				signUp={signUp}
+				isFetching={isFetching}
+				onResend={() => signUp.verifications.sendEmailCode()}
+			/>
 		);
 	}
 
@@ -173,70 +94,189 @@ function SignUpPage() {
 
 	return (
 		<AuthLayout
-			title="Créer un compte"
-			subtitle="14 jours d'essai gratuit — sans carte bancaire."
+			mode="sign-up"
+			kicker="S'inscrire · essai 14 jours"
+			heading="Crée ton espace."
+			subtitle="Sans carte bancaire. Résiliation en un clic."
 			footer={
 				<>
-					Déjà inscrit ?{" "}
+					Déjà un compte ?
 					<Link
 						to="/sign-in"
-						className="font-medium text-amber-700 hover:underline"
+						className="font-medium text-accent-ink hover:underline"
 					>
 						Se connecter
 					</Link>
 				</>
 			}
 		>
-			<div className="space-y-4">
-				<GoogleButton
-					onClick={onGoogle}
-					disabled={isFetching}
-					label="S'inscrire avec Google"
-				/>
-				<Divider />
-				<form
-					onSubmit={signUpForm.handleSubmit(onSubmitSignUp)}
-					className="space-y-4"
-					noValidate
-				>
-					<TextField
-						label="Email"
+			<SsoRow
+				label="Continuer avec Google"
+				onClick={onGoogle}
+				disabled={isFetching}
+			/>
+			<form
+				onSubmit={signUpForm.handleSubmit(onSubmitSignUp)}
+				className="flex flex-col gap-3.5"
+				noValidate
+			>
+				<Field label="Email">
+					<Input
 						type="email"
 						autoComplete="email"
+						placeholder="helene@pleiade.fr"
 						{...signUpForm.register("email")}
-						error={signUpForm.formState.errors.email?.message}
 					/>
-					<TextField
-						label="Mot de passe"
-						type="password"
-						autoComplete="new-password"
-						{...signUpForm.register("password")}
-						error={signUpForm.formState.errors.password?.message}
-					/>
-					<TextField
-						label="Confirmer le mot de passe"
-						type="password"
-						autoComplete="new-password"
-						{...signUpForm.register("passwordConfirm")}
-						error={signUpForm.formState.errors.passwordConfirm?.message}
-					/>
-					{rootError ? (
-						<p className="rounded-md bg-red-50 px-3 py-2 text-red-700 text-sm">
-							{rootError}
+					{signUpForm.formState.errors.email?.message ? (
+						<p className="mt-1 text-[12px] text-[oklch(0.5_0.12_25)]">
+							{signUpForm.formState.errors.email.message}
 						</p>
 					) : null}
-					{/* Clerk Turnstile captcha mounts here — required before
-					    `signUp.password()` is called. Bot protection settings
-					    configured in the Clerk Dashboard. */}
-					<div id="clerk-captcha" />
+				</Field>
+				<Field label="Mot de passe" help="Au moins 8 caractères.">
+					<Input
+						type="password"
+						autoComplete="new-password"
+						placeholder="••••••••"
+						{...signUpForm.register("password")}
+					/>
+					{signUpForm.formState.errors.password?.message ? (
+						<p className="mt-1 text-[12px] text-[oklch(0.5_0.12_25)]">
+							{signUpForm.formState.errors.password.message}
+						</p>
+					) : null}
+				</Field>
+				<Field label="Confirmer le mot de passe">
+					<Input
+						type="password"
+						autoComplete="new-password"
+						placeholder="••••••••"
+						{...signUpForm.register("passwordConfirm")}
+					/>
+					{signUpForm.formState.errors.passwordConfirm?.message ? (
+						<p className="mt-1 text-[12px] text-[oklch(0.5_0.12_25)]">
+							{signUpForm.formState.errors.passwordConfirm.message}
+						</p>
+					) : null}
+				</Field>
+				{rootError ? (
+					<p className="rounded-md bg-[oklch(0.95_0.03_25)] px-3 py-2 text-[12.5px] text-[oklch(0.4_0.12_25)]">
+						{rootError}
+					</p>
+				) : null}
+				{/* Clerk Turnstile captcha mounts ici — requis avant
+				    `signUp.password()`. Bot protection configurée côté dashboard. */}
+				<div id="clerk-captcha" />
+				<Button
+					variant="accent"
+					size="lg"
+					type="submit"
+					className="mt-2 w-full"
+					iconRight={<ArrowRight size={14} strokeWidth={1.75} />}
+					disabled={isFetching}
+				>
+					{isFetching ? "Inscription…" : "Créer mon compte"}
+				</Button>
+				<p className="mt-2 text-center text-[11.5px] text-ink-mute leading-[1.5]">
+					En créant un compte, tu acceptes nos{" "}
+					<a href="/legal/terms" className="text-ink-soft hover:underline">
+						CGU
+					</a>{" "}
+					et notre{" "}
+					<a href="/legal/privacy" className="text-ink-soft hover:underline">
+						politique de confidentialité
+					</a>
+					.
+				</p>
+			</form>
+		</AuthLayout>
+	);
+}
+
+type VerificationStepProps = {
+	readonly signUp: ReturnType<typeof useSignUp>["signUp"];
+	readonly isFetching: boolean;
+	readonly onResend: () => void;
+};
+
+function VerificationStep({
+	signUp,
+	isFetching,
+	onResend,
+}: VerificationStepProps) {
+	const form = useForm<{ code: string }>({
+		defaultValues: { code: "" },
+	});
+
+	const rootError = form.formState.errors.root?.message;
+
+	const onComplete = async (code: string) => {
+		form.clearErrors("root");
+		const verifyResult = await signUp.verifications.verifyEmailCode({ code });
+		if (verifyResult.error) {
+			form.setError("root", {
+				message: clerkErrorToMessage(
+					verifyResult.error,
+					"Code invalide. Réessayez.",
+				),
+			});
+			return;
+		}
+		const finalizeResult = await signUp.finalize();
+		if (finalizeResult.error) {
+			form.setError("root", {
+				message: clerkErrorToMessage(
+					finalizeResult.error,
+					"Impossible de finaliser l'inscription.",
+				),
+			});
+			return;
+		}
+		// Nouveaux inscrits → `/onboarding` pour le flow guidé.
+		window.location.href = "/onboarding";
+	};
+
+	return (
+		<AuthLayout
+			mode="sign-up"
+			kicker="Vérification email"
+			heading={
+				<>
+					Vérifie ton <span className="text-accent-ink italic">email.</span>
+				</>
+			}
+			subtitle="Un code à 6 chiffres vient d'être envoyé à ton adresse. Copie-le ci-dessous."
+			footer={
+				<>
+					Pas reçu ?
 					<button
-						type="submit"
-						disabled={isFetching}
-						className="w-full rounded-md bg-neutral-900 py-2.5 font-medium text-sm text-white transition hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-50"
+						type="button"
+						onClick={onResend}
+						className="cursor-pointer border-none bg-transparent p-0 font-medium text-accent-ink hover:underline"
 					>
-						{isFetching ? "Inscription…" : "S'inscrire"}
+						Renvoyer le code
 					</button>
-				</form>
+				</>
+			}
+		>
+			<div className="flex flex-col gap-[18px]">
+				<Field label="Code à 6 chiffres">
+					<OtpInput onComplete={(v) => void onComplete(v)} autoFocus />
+				</Field>
+				<div className="flex items-center gap-2 rounded-md bg-bg-deep px-3 py-2.5 text-[12px] text-ink-soft">
+					<Bell size={13} strokeWidth={1.75} />
+					Vérifiez vos spams si le code tarde à arriver.
+				</div>
+				{rootError ? (
+					<p className="rounded-md bg-[oklch(0.95_0.03_25)] px-3 py-2 text-[12.5px] text-[oklch(0.4_0.12_25)]">
+						{rootError}
+					</p>
+				) : null}
+				{isFetching ? (
+					<p className="text-center text-[12.5px] text-ink-mute italic">
+						Vérification en cours…
+					</p>
+				) : null}
 			</div>
 		</AuthLayout>
 	);
