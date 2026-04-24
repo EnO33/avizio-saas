@@ -3,36 +3,39 @@ import { useEffect, useRef } from "react";
 
 /**
  * Mounted on the dashboard when the current Clerk session has no active
- * organization. Every Avizio feature is org-scoped so a user without one
- * can't do anything useful — we activate the first available membership,
- * or fall back to creating a fresh org if none exists yet.
+ * organization. Deux cas possibles :
  *
- * Covers three cases:
- *  - OAuth signup just landed: `user.created` webhook auto-created an org
- *    but the session was minted before — we activate it.
- *  - Webhook raced with the callback (rare): we create one client-side.
- *  - Existing user who never had an org: we create one on first visit.
+ *  1. L'utilisateur a au moins une membership qui n'est juste pas active
+ *     dans la session courante (race OAuth, changement d'appareil…) →
+ *     on active la première et on recharge.
  *
- * After the session switches, a reload picks up the new `orgId` in the
- * `_authed.beforeLoad` context so the dashboard re-renders org-scoped.
+ *  2. L'utilisateur n'a **aucune** membership → on le redirige vers
+ *     `/onboarding` pour le flow guidé (création d'org + établissement +
+ *     connect Google). On ne crée PLUS l'org en silence : l'auto-create
+ *     qu'on faisait avant contournait l'onboarding et sortait
+ *     l'utilisateur avec un espace mal nommé (« Mon organisation »).
+ *
+ * Après le setActive (cas 1), un reload fait relire `_authed.beforeLoad`
+ * avec le nouveau `orgId` en context.
  */
 export function EnsureActiveOrganization() {
-	const { isLoaded, createOrganization, setActive, userMemberships } =
-		useOrganizationList({ userMemberships: true });
+	const { isLoaded, setActive, userMemberships } = useOrganizationList({
+		userMemberships: true,
+	});
 	const attemptedRef = useRef(false);
 
 	useEffect(() => {
 		// `isLoaded` means Clerk's top-level store is ready, NOT that the
 		// paginated memberships have been fetched — we must wait for that too
 		// or we'll read `data = []` as "no orgs" during the initial fetch
-		// and create a duplicate every mount (ask me how I know).
+		// and redirect to onboarding even quand une membership va arriver.
 		if (!isLoaded) return;
 		if (userMemberships.isLoading) return;
 		if (attemptedRef.current) return;
 
-		// Circuit breaker: prevent a runaway loop if an edge case leaves the
-		// session without `orgId` even after we set one active. One attempt
-		// per 30 s window — after that the dashboard just shows the switcher.
+		// Circuit breaker : évite une boucle de redirections si un edge
+		// case empêche Clerk de persister le setActive. Une tentative
+		// par 30 s — au-delà, le dashboard affiche l'org switcher manuel.
 		const cooldownKey = "avizio:org-bootstrap:last-attempt";
 		const lastAttempt = Number(window.sessionStorage.getItem(cooldownKey));
 		if (Number.isFinite(lastAttempt) && Date.now() - lastAttempt < 30_000) {
@@ -50,33 +53,26 @@ export function EnsureActiveOrganization() {
 			if (memberships.length > 0) {
 				const first = memberships[0];
 				if (!first) return;
+				if (!setActive) return;
 				await setActive({ organization: first.organization.id });
-			} else {
-				const created = await createOrganization({ name: "Mon organisation" });
-				// `createOrganization` does not always set the new org as
-				// active in the session token — make it explicit so the
-				// subsequent reload sees `org_id` in the JWT.
-				await setActive({ organization: created.id });
+				// Hard nav so `_authed.beforeLoad` re-reads `auth()` avec le
+				// `orgId` fraîchement set dans la JWT.
+				window.location.href = "/dashboard";
+				return;
 			}
-			// Hard nav so `_authed.beforeLoad` re-reads `auth()` with the
-			// freshly-set active org and the dashboard renders in the proper
-			// org-scoped context.
-			window.location.href = "/dashboard";
+			// Zero membership → onboarding. Le flow guidé se charge de
+			// créer l'org avec un vrai nom et de chaîner la création de
+			// l'établissement + la connexion Google.
+			window.location.href = "/onboarding";
 		};
 
 		run();
-	}, [
-		isLoaded,
-		userMemberships.isLoading,
-		userMemberships.data,
-		createOrganization,
-		setActive,
-	]);
+	}, [isLoaded, userMemberships.isLoading, userMemberships.data, setActive]);
 
 	return (
 		<div className="flex items-center gap-3 rounded-lg border border-neutral-200 bg-white p-6 text-neutral-600 text-sm">
 			<Spinner />
-			Préparation de ton organisation…
+			Préparation de ton espace…
 		</div>
 	);
 }
