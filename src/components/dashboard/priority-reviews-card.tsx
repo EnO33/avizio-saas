@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { ArrowRight, ChevronRight } from "lucide-react";
+import { getReviewInitials } from "#/components/reviews/initials";
 import { Avatar } from "#/components/ui/avatar";
 import { Button } from "#/components/ui/button";
 import { Card } from "#/components/ui/card";
@@ -58,7 +59,7 @@ export function PriorityReviewsCard({ reviews, totalPending }: Props) {
 }
 
 function PriorityRow({ review }: { review: ReviewSummary }) {
-	const initial = getInitial(review.authorName);
+	const initial = getReviewInitials(review.authorName);
 	return (
 		<Link
 			to="/reviews/$id"
@@ -105,19 +106,4 @@ function EmptyPriority() {
 			</div>
 		</div>
 	);
-}
-
-/*
-  Prend la première lettre de chaque mot du nom d'auteur, limite à 2.
-  Ex. « Jean-Paul Roux » → « JR », « Claire » → « C », « Marc D. » → « MD ».
-  `name.split(/\s+/)` couvre espaces et tabs, et le `.slice(0, 2)` borne
-  à deux lettres même pour les noms composés (« Marie-Anne Dupont »).
-*/
-function getInitial(name: string): string {
-	const parts = name.trim().split(/\s+/);
-	const letters = parts
-		.slice(0, 2)
-		.map((p) => p.charAt(0).toUpperCase())
-		.join("");
-	return letters || "?";
 }

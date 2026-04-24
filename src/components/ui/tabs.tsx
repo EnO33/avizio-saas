@@ -2,7 +2,7 @@ export type TabItem<TId extends string = string> = {
 	readonly id: TId;
 	readonly label: string;
 	/** Count affiché en pill à droite du label. Omettre pour ne pas en avoir. */
-	readonly count?: number;
+	readonly count?: number | undefined;
 };
 
 type Props<TId extends string> = {
