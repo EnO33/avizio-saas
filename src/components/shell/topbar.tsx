@@ -11,11 +11,13 @@ type Props = {
  * Topbar sticky 60px. Pas de barre de recherche — la palette ⌘K est
  * skippée pour ce premier jet (ajoutée dans une PR dédiée plus tard).
  * Le CTA accent « Générer une réponse » renvoie vers l'inbox : c'est
- * l'action « que faire ensuite » par défaut pour l'utilisateur.
+ * l'action « que faire ensuite » par défaut pour l'utilisateur. En mobile
+ * le label est masqué pour dégager de la largeur — seule l'icône `+`
+ * subsiste, aria-label explicite pour garder l'accessibilité.
  */
 export function Topbar({ hasNotifications }: Props) {
 	return (
-		<div className="sticky top-0 z-[5] flex h-[60px] items-center gap-4 border-line-soft border-b bg-bg px-7">
+		<div className="sticky top-0 z-[5] flex h-[60px] items-center gap-3 border-line-soft border-b bg-bg px-4 sm:gap-4 sm:px-7">
 			<div className="flex-1" />
 
 			<button
@@ -36,13 +38,13 @@ export function Topbar({ hasNotifications }: Props) {
 				) : null}
 			</button>
 
-			<Link to="/reviews">
+			<Link to="/reviews" aria-label="Générer une réponse">
 				<Button
 					variant="accent"
 					size="sm"
 					icon={<Plus size={14} strokeWidth={1.75} />}
 				>
-					Générer une réponse
+					<span className="hidden sm:inline">Générer une réponse</span>
 				</Button>
 			</Link>
 		</div>
