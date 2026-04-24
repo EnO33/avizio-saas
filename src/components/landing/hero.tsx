@@ -101,15 +101,6 @@ function HeroVisual() {
 				}}
 			/>
 
-			{/* Chip meta en haut à droite — contexte établissement. */}
-			<div
-				className="absolute top-0 right-[30px] z-[1] inline-flex items-center gap-1.5 rounded-full border border-line-soft bg-paper px-2.5 py-1.5 font-mono text-[10.5px] text-ink-mute shadow-sm"
-				style={{ letterSpacing: "0.06em" }}
-			>
-				<span className="size-[5px] rounded-full bg-green" />
-				LA MAISON PLÉIADE · LYON
-			</div>
-
 			{/* Card 1 — avis entrant Google. */}
 			<div
 				className="absolute top-[10px] left-0 z-[2] w-[330px] rounded-[16px] border border-line-soft bg-paper p-5"
