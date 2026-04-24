@@ -50,7 +50,7 @@ function Dashboard() {
 	const today = new Date();
 
 	return (
-		<div className="p-[32px_40px]" style={{ maxWidth: 1280 }}>
+		<div className="mx-auto p-[32px_40px]" style={{ maxWidth: 1280 }}>
 			<OAuthResultBanner connected={connected} error={error} />
 			{!orgId ? <EnsureActiveOrganization /> : null}
 
