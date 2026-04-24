@@ -1,40 +1,41 @@
 import type { LucideIcon } from "lucide-react";
-import { TrendingDown, TrendingUp } from "lucide-react";
+import { Minus, TrendingDown, TrendingUp } from "lucide-react";
 import { Card } from "#/components/ui/card";
+
+export type KpiDelta = {
+	/** Texte tel qu'affiché (ex. « +0,2 », « −18 min »). */
+	readonly label: string;
+	/** Direction qualitative — détermine l'icône et la couleur. */
+	readonly direction: "up" | "down";
+};
 
 type Props = {
 	readonly label: string;
+	/** Valeur principale. Passer « — » explicitement pour un état vide. */
 	readonly value: string;
 	/** Unité affichée en suffixe serif (ex. « ★ » ou « % »). */
-	readonly unit?: string;
-	/** Texte du delta (ex. « +0,2 », « −18 min »). */
-	readonly delta: string;
-	/** Direction de la tendance — détermine l'icône et la couleur. */
-	readonly deltaDirection: "up" | "down";
+	readonly unit?: string | undefined;
+	/**
+	 * Delta vs période précédente. `null` → ligne remplacée par un tiret
+	 * neutre, cas d'un mois précédent sans donnée où le delta n'a pas de
+	 * sens (éviter d'afficher « +4 » quand on passe de 0 à 4).
+	 */
+	readonly delta: KpiDelta | null;
 	/**
 	 * `true` = carte visuellement distinguée (fond bg-deep + chiffre accent-ink).
 	 * Utilisé pour le KPI principal (note moyenne) — premier des quatre.
 	 */
-	readonly accent?: boolean;
+	readonly accent?: boolean | undefined;
 };
 
 /**
  * Une mesure clé en chiffre serif géant + delta vs période précédente.
  * L'arrondi du delta (up / down) ne pré-suppose pas la « bonne » direction :
  * le caller décide. Ex. « temps médian −18 min » est une bonne nouvelle et
- * se rend en vert malgré la flèche descendante — on passe `deltaDirection="up"`
- * pour dire « c'est positif » même si visuellement la valeur baisse.
+ * se rend en vert malgré la valeur en baisse — le caller passe
+ * `direction: "up"` pour dire « c'est positif ».
  */
-export function KpiCard({
-	label,
-	value,
-	unit,
-	delta,
-	deltaDirection,
-	accent = false,
-}: Props) {
-	const DeltaIcon: LucideIcon =
-		deltaDirection === "up" ? TrendingUp : TrendingDown;
+export function KpiCard({ label, value, unit, delta, accent = false }: Props) {
 	return (
 		<Card padding={18} className={accent ? "bg-bg-deep" : undefined}>
 			<div className="font-mono text-[11.5px] text-ink-mute uppercase tracking-[0.04em]">
@@ -62,18 +63,33 @@ export function KpiCard({
 					</span>
 				) : null}
 			</div>
-			<div
-				className="mt-2.5 inline-flex items-center gap-1 text-[11.5px]"
-				style={{
-					color:
-						deltaDirection === "up"
-							? "oklch(0.48 0.1 150)"
-							: "oklch(0.55 0.14 25)",
-				}}
-			>
-				<DeltaIcon size={13} strokeWidth={1.75} />
-				{delta}
-			</div>
+			<DeltaRow delta={delta} />
 		</Card>
+	);
+}
+
+function DeltaRow({ delta }: { delta: KpiDelta | null }) {
+	if (delta == null) {
+		return (
+			<div className="mt-2.5 inline-flex items-center gap-1 text-[11.5px] text-ink-mute">
+				<Minus size={13} strokeWidth={1.75} />
+				Pas de comparaison
+			</div>
+		);
+	}
+	const Icon: LucideIcon = delta.direction === "up" ? TrendingUp : TrendingDown;
+	return (
+		<div
+			className="mt-2.5 inline-flex items-center gap-1 text-[11.5px]"
+			style={{
+				color:
+					delta.direction === "up"
+						? "oklch(0.48 0.1 150)"
+						: "oklch(0.55 0.14 25)",
+			}}
+		>
+			<Icon size={13} strokeWidth={1.75} />
+			{delta.label}
+		</div>
 	);
 }
