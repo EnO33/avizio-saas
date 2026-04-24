@@ -1,6 +1,8 @@
 import { Link } from "@tanstack/react-router";
 import { Bell, Plus } from "lucide-react";
 import { Button } from "#/components/ui/button";
+import { Logo } from "#/components/ui/logo";
+import { UserMenu } from "./user-menu";
 
 type Props = {
 	/** `true` si des avis sont en attente — affiche le dot accent sur la cloche. */
@@ -14,10 +16,23 @@ type Props = {
  * l'action « que faire ensuite » par défaut pour l'utilisateur. En mobile
  * le label est masqué pour dégager de la largeur — seule l'icône `+`
  * subsiste, aria-label explicite pour garder l'accessibilité.
+ *
+ * En mobile uniquement, le topbar porte aussi le logo à gauche et un
+ * `UserMenu` compact à droite — deux affordances habituellement dans la
+ * sidebar mais cachée sous `md:`. Évite à l'utilisateur mobile d'être
+ * coincé sans logo repère ni moyen de se déconnecter.
  */
 export function Topbar({ hasNotifications }: Props) {
 	return (
 		<div className="sticky top-0 z-[5] flex h-[60px] items-center gap-3 border-line-soft border-b bg-bg px-4 sm:gap-4 sm:px-7">
+			<Link
+				to="/dashboard"
+				aria-label="Avizio — accueil"
+				className="rounded focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2 md:hidden"
+			>
+				<Logo size={20} />
+			</Link>
+
 			<div className="flex-1" />
 
 			<button
@@ -52,6 +67,10 @@ export function Topbar({ hasNotifications }: Props) {
 					<span className="hidden sm:inline">Générer une réponse</span>
 				</Button>
 			</Link>
+
+			<div className="md:hidden">
+				<UserMenu variant="compact" />
+			</div>
 		</div>
 	);
 }
