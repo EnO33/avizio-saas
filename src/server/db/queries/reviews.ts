@@ -169,10 +169,15 @@ export async function upsertReview(
 export type ReviewWithEstablishment = {
 	readonly review: {
 		readonly id: string;
+		readonly establishmentId: string;
+		readonly establishmentName: string;
+		readonly platform: ReviewSummary["platform"];
 		readonly authorName: string;
+		readonly authorAvatarUrl: string | null;
 		readonly rating: number;
 		readonly content: string;
 		readonly status: ReviewSummary["status"];
+		readonly publishedAt: Date;
 	};
 	readonly establishment: {
 		readonly id: string;
@@ -197,10 +202,13 @@ export async function getReviewWithEstablishmentForOrg(params: {
 		db
 			.select({
 				reviewId: reviews.id,
+				platform: reviews.platform,
 				authorName: reviews.authorName,
+				authorAvatarUrl: reviews.authorAvatarUrl,
 				rating: reviews.rating,
 				content: reviews.content,
 				status: reviews.status,
+				publishedAt: reviews.publishedAt,
 				establishmentId: establishments.id,
 				establishmentName: establishments.name,
 				city: establishments.city,
@@ -225,10 +233,15 @@ export async function getReviewWithEstablishmentForOrg(params: {
 	return ok({
 		review: {
 			id: row.reviewId,
+			establishmentId: row.establishmentId,
+			establishmentName: row.establishmentName,
+			platform: row.platform,
 			authorName: row.authorName,
+			authorAvatarUrl: row.authorAvatarUrl,
 			rating: row.rating,
 			content: row.content,
 			status: row.status,
+			publishedAt: row.publishedAt,
 		},
 		establishment: {
 			id: row.establishmentId,
