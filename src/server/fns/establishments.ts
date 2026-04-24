@@ -66,6 +66,8 @@ const createInputSchema = z.object({
 	postalCode: postalCodeSchema,
 	businessType: businessTypeSchema,
 	languageCode: languageCodeSchema,
+	defaultTone: toneSchema.optional(),
+	brandContext: brandContextSchema.optional(),
 });
 
 const updateInputSchema = z.object({

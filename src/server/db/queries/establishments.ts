@@ -45,6 +45,10 @@ export type CreateEstablishmentInput = {
 	readonly postalCode: string | null;
 	readonly businessType: BusinessType;
 	readonly languageCode: string;
+	/** Optionnel — la colonne DB a un default `warm`. */
+	readonly defaultTone?: Tone | undefined;
+	/** Optionnel — vide = `NULL` en DB. */
+	readonly brandContext?: string | null | undefined;
 };
 
 export type UpdateEstablishmentPatch = {
@@ -93,6 +97,14 @@ export async function createEstablishment(
 				postalCode: input.postalCode,
 				businessType: input.businessType,
 				languageCode: input.languageCode,
+				// `undefined` → on laisse la DB appliquer son default (warm).
+				// `null` côté brandContext → colonne nullable, insert explicit.
+				...(input.defaultTone !== undefined
+					? { defaultTone: input.defaultTone }
+					: {}),
+				...(input.brandContext !== undefined
+					? { brandContext: input.brandContext }
+					: {}),
 			})
 			.returning(SUMMARY_COLUMNS),
 		toDbError,
