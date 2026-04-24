@@ -59,11 +59,7 @@ const NAV: readonly NavEntry[] = [
 		id: "settings",
 		label: "Paramètres",
 		icon: Settings,
-		// Provisoire : les paramètres sont aujourd'hui per-établissement, on
-		// renvoie vers la liste d'établissements pour que l'utilisateur
-		// choisisse celui à configurer. La cible évoluera quand on aura des
-		// paramètres org-level (équipe, facturation).
-		to: "/establishments",
+		to: "/settings",
 	},
 ];
 

@@ -83,14 +83,16 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
+// « Équipe » et « Facturation » ont déménagé dans `/settings` (org-level) —
+// cf. ADR : les memberships Clerk sont attachés à l'org, pas à un
+// établissement individuel. Ce sub-nav ne liste plus que ce qui est
+// vraiment per-étab.
 const SUB_NAV_ITEMS = [
 	{ id: "general", label: "Général" },
 	{ id: "tone", label: "Ton & style" },
 	{ id: "context", label: "Contexte marque" },
 	{ id: "notifications", label: "Notifications" },
 	{ id: "connexions", label: "Connexions" },
-	{ id: "equipe", label: "Équipe", disabled: true },
-	{ id: "facturation", label: "Facturation", disabled: true },
 ];
 
 type Props = {
