@@ -96,10 +96,10 @@ function SignUpPage() {
 			return;
 		}
 		// Hard reload so the next request carries the freshly-set Clerk
-		// cookies. `/dashboard` then authenticates server-side (via
-		// `_authed.beforeLoad`) and renders. Clerk's built-in `navigate` is a
-		// no-op for custom flows, so we own the redirect here.
-		window.location.href = "/dashboard";
+		// cookies. Nouveaux inscrits → `/onboarding` pour le flow guidé
+		// (org + établissement + Google). Clerk's built-in `navigate` est
+		// no-op en custom flow donc on route ici.
+		window.location.href = "/onboarding";
 	};
 
 	const onGoogle = async () => {

@@ -64,7 +64,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 					signInUrl="/sign-in"
 					signUpUrl="/sign-up"
 					signInFallbackRedirectUrl="/dashboard"
-					signUpFallbackRedirectUrl="/dashboard"
+					signUpFallbackRedirectUrl="/onboarding"
 				>
 					{children}
 				</ClerkProvider>

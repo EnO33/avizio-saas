@@ -20,7 +20,7 @@ function SsoCallbackPage() {
 			 */}
 			<AuthenticateWithRedirectCallback
 				signInForceRedirectUrl="/dashboard"
-				signUpForceRedirectUrl="/dashboard"
+				signUpForceRedirectUrl="/onboarding"
 			/>
 		</main>
 	);

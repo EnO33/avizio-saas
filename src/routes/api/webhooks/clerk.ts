@@ -5,7 +5,6 @@ import { env } from "#/lib/env";
 import { unknownToMessage } from "#/lib/errors";
 import { logger } from "#/lib/logger";
 import { fromPromise } from "#/lib/result";
-import { handleUserCreatedAutoOrg } from "#/server/webhooks/clerk-auto-org";
 import {
 	handleMembershipDelete,
 	handleMembershipUpsert,
@@ -41,14 +40,12 @@ export const Route = createFileRoute("/api/webhooks/clerk")({
 
 				const evt = verified.value;
 				const result = await match(evt)
-					.with({ type: "user.created" }, async ({ data }) => {
-						// Upsert the user row first so subsequent org + membership
-						// webhooks (triggered by the Clerk org creation below) don't
-						// hit FK violations racing against our own insert.
-						const upsertResult = await handleUserUpsert(data);
-						if (upsertResult.isErr()) return upsertResult;
-						return handleUserCreatedAutoOrg(data);
-					})
+					// L'ancien handler auto-créait une org au user.created, ce qui
+					// court-circuitait l'onboarding (l'utilisateur arrive avec une
+					// membership existante et se retrouve renvoyé sur /dashboard).
+					// L'onboarding guidé est désormais la seule voie de création
+					// d'org — le webhook se contente d'upsert le user.
+					.with({ type: "user.created" }, ({ data }) => handleUserUpsert(data))
 					.with({ type: "user.updated" }, ({ data }) => handleUserUpsert(data))
 					.with({ type: "user.deleted" }, ({ data }) =>
 						data.id ? handleUserDelete(data.id) : handleUnknownEvent(),
