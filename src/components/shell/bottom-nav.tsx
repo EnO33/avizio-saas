@@ -91,12 +91,12 @@ export function BottomNav({ pendingReviewsCount }: Props) {
 						to={entry.to}
 						aria-current={active ? "page" : undefined}
 						className={[
-							"relative flex flex-1 flex-col items-center justify-center gap-1 py-2.5 text-[10.5px] transition-colors duration-[120ms]",
+							"relative flex min-h-[56px] flex-1 flex-col items-center justify-center gap-1 py-2 text-[11px] transition-colors duration-[120ms] focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-[-2px]",
 							active ? "text-accent" : "text-ink-mute hover:text-ink-soft",
 						].join(" ")}
 					>
 						<span className="relative">
-							<Icon size={20} strokeWidth={1.75} aria-hidden="true" />
+							<Icon size={22} strokeWidth={1.75} aria-hidden="true" />
 							{showBadge ? (
 								<span
 									aria-hidden="true"

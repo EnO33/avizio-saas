@@ -69,7 +69,7 @@ export function Button({
 			type={type}
 			disabled={disabled}
 			className={[
-				"inline-flex items-center justify-center font-medium whitespace-nowrap transition-all duration-[120ms] disabled:cursor-not-allowed",
+				"inline-flex items-center justify-center font-medium whitespace-nowrap outline-none transition-all duration-[120ms] focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2 disabled:cursor-not-allowed",
 				SIZE_STYLES[size],
 				VARIANT_STYLES[variant],
 				className,

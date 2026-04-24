@@ -31,7 +31,7 @@ export function InboxRow({ review, selected, onSelect }: Props) {
 			type="button"
 			onClick={onSelect}
 			className={[
-				"mb-0.5 block w-full rounded-lg border p-3 text-left transition-all duration-[100ms]",
+				"mb-0.5 block w-full rounded-lg border p-3 text-left outline-none transition-all duration-[100ms] focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2",
 				selected
 					? "border-accent bg-[oklch(0.97_0.02_50)]"
 					: "border-transparent hover:bg-bg-deep",
@@ -44,22 +44,22 @@ export function InboxRow({ review, selected, onSelect }: Props) {
 						<span className="flex-1 truncate font-medium text-[13px] text-ink">
 							{review.authorName}
 						</span>
-						<span className="shrink-0 text-[11px] text-ink-mute">
+						<span className="shrink-0 text-[11.5px] text-ink-mute sm:text-[11px]">
 							{timeAgoFr(review.publishedAt)}
 						</span>
 					</div>
 					<div className="mb-1 flex items-center gap-1.5">
 						<Stars value={review.rating} size={10} />
-						<span className="text-[10.5px] text-ink-mute">
+						<span className="text-[11.5px] text-ink-mute sm:text-[10.5px]">
 							· {review.establishmentName}
 						</span>
 					</div>
-					<p className="line-clamp-2 text-[12.5px] text-ink-soft leading-[1.45]">
+					<p className="line-clamp-2 text-[13px] text-ink-soft leading-[1.45] sm:text-[12.5px]">
 						{review.content}
 					</p>
 					<div className="mt-2 flex items-center gap-1.5">
 						<PlatformIcon platform={review.platform} size={12} />
-						<span className="text-[10.5px] text-ink-mute">
+						<span className="text-[11.5px] text-ink-mute sm:text-[10.5px]">
 							{PLATFORM_LABELS[review.platform]}
 						</span>
 						{flagged ? (

@@ -13,7 +13,7 @@ export function Input({ className = "", ...rest }: Props) {
 		<input
 			{...rest}
 			className={[
-				"w-full rounded-lg border border-line bg-paper px-3.5 py-2.5 text-[14px] text-ink outline-none transition-colors placeholder:text-ink-mute focus:border-accent",
+				"w-full rounded-lg border border-line bg-paper px-3.5 py-2.5 text-[14px] text-ink outline-none transition-colors placeholder:text-ink-mute focus:border-accent focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-0",
 				className,
 			].join(" ")}
 		/>

@@ -311,7 +311,8 @@ function EditorShell(props: EditorShellProps) {
 										type="button"
 										onClick={onPrevVersion}
 										disabled={!onPrevVersion}
-										className="rounded border border-line bg-paper px-1.5 py-0.5 text-[10.5px] disabled:opacity-30"
+										aria-label="Version précédente"
+										className="inline-flex h-7 w-8 items-center justify-center rounded border border-line bg-paper text-[11px] outline-none transition-all focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2 disabled:opacity-30 sm:h-auto sm:w-auto sm:px-1.5 sm:py-0.5 sm:text-[10.5px]"
 									>
 										←
 									</button>
@@ -319,7 +320,8 @@ function EditorShell(props: EditorShellProps) {
 										type="button"
 										onClick={onNextVersion}
 										disabled={!onNextVersion}
-										className="rounded border border-line bg-paper px-1.5 py-0.5 text-[10.5px] disabled:opacity-30"
+										aria-label="Version suivante"
+										className="inline-flex h-7 w-8 items-center justify-center rounded border border-line bg-paper text-[11px] outline-none transition-all focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2 disabled:opacity-30 sm:h-auto sm:w-auto sm:px-1.5 sm:py-0.5 sm:text-[10.5px]"
 									>
 										→
 									</button>
