@@ -1,47 +1,74 @@
+import type { SparkPoint } from "#/server/db/queries/dashboard";
+
+type Props = {
+	/** Séries quotidiennes sur les 30 derniers jours, ordre chronologique. */
+	readonly data: readonly SparkPoint[];
+};
+
 /**
- * Placeholder static spark chart — 30 points hardcodés simulant
- * une évolution de note sur 90 jours. Sera remplacé par un vrai
- * calcul DB (moyenne glissante des ratings sur l'org) quand on aura
- * assez de données avis en prod pour que l'agrégat soit significatif.
+ * Courbe de la note moyenne glissante. La série peut contenir des
+ * journées sans avis (`avgRating: null`) — on les comble en carry-forward
+ * de la dernière valeur connue pour garder un trait continu, quitte à
+ * montrer un plateau quand l'activité est faible. Sous un certain seuil
+ * de points non-null (4), on affiche un état vide plutôt qu'une courbe
+ * trompeuse à deux segments.
  *
- * Rendu en SVG pur, zéro dépendance charting. Area chart sous le trait
- * avec gradient accent qui s'estompe vers le bas — signalise la
- * direction (tendance positive) sans saturer visuellement.
+ * SVG pur, zéro dépendance charting. Area chart sous le trait avec
+ * gradient accent qui s'estompe vers le bas — signalise la direction
+ * sans saturer visuellement.
  */
-const DATA: readonly number[] = [
-	4.2, 4.3, 4.2, 4.1, 4.3, 4.4, 4.3, 4.4, 4.5, 4.4, 4.3, 4.4, 4.5, 4.5, 4.4,
-	4.6, 4.5, 4.6, 4.6, 4.5, 4.6, 4.7, 4.6, 4.6, 4.7, 4.6, 4.6, 4.7, 4.6, 4.6,
-];
+export function SparkChart({ data }: Props) {
+	const series = carryForward(data);
+	const valuesWithRating = series.filter(
+		(p): p is { day: Date; avgRating: number } => p.avgRating !== null,
+	);
 
-const W = 680;
-const H = 160;
-const PAD = 20;
-const MIN = 4.0;
-const MAX = 5.0;
+	if (valuesWithRating.length < 4) {
+		return <EmptyState />;
+	}
 
-export function SparkChart() {
-	const xAt = (i: number) => PAD + (i / (DATA.length - 1)) * (W - PAD * 2);
+	const W = 680;
+	const H = 160;
+	const PAD = 20;
+
+	// Bornes dynamiques : on cale l'axe Y entre 0,5 point sous le min et
+	// 0,5 sous le max (min 0.5 écart pour éviter un axe plat quand toutes
+	// les valeurs sont identiques). Clampé à [0, 5] pour rester dans la
+	// plage ratings valides.
+	const ratings = valuesWithRating.map((p) => p.avgRating);
+	const rawMin = Math.min(...ratings);
+	const rawMax = Math.max(...ratings);
+	const span = Math.max(rawMax - rawMin, 0.5);
+	const min = Math.max(0, Math.min(5, rawMin - span * 0.2));
+	const max = Math.min(5, Math.max(0, rawMax + span * 0.2));
+
+	const xAt = (i: number) => PAD + (i / (series.length - 1)) * (W - PAD * 2);
 	const yAt = (v: number) =>
-		PAD + (1 - (v - MIN) / (MAX - MIN)) * (H - PAD * 2);
+		max === min ? H / 2 : PAD + (1 - (v - min) / (max - min)) * (H - PAD * 2);
 
-	const linePath = DATA.map(
-		(v, i) => `${i === 0 ? "M" : "L"} ${xAt(i)} ${yAt(v)}`,
-	).join(" ");
-	const areaPath = `${linePath} L ${xAt(DATA.length - 1)} ${H - PAD} L ${xAt(0)} ${H - PAD} Z`;
+	const linePath = series
+		.map((point, i) => {
+			if (point.avgRating == null) return "";
+			const cmd = i === 0 ? "M" : "L";
+			return `${cmd} ${xAt(i)} ${yAt(point.avgRating)}`;
+		})
+		.filter(Boolean)
+		.join(" ");
+	const areaPath = `${linePath} L ${xAt(series.length - 1)} ${H - PAD} L ${xAt(0)} ${H - PAD} Z`;
 
-	const gridlines = [4.0, 4.5, 5.0] as const;
-	const lastIdx = DATA.length - 1;
-	const last = DATA[lastIdx];
+	const gridlines = pickGridlines(min, max);
+	const lastIdx = series.length - 1;
+	const last = series[lastIdx]?.avgRating;
 
 	return (
 		<svg
 			width="100%"
 			viewBox={`0 0 ${W} ${H}`}
 			role="img"
-			aria-label="Évolution de la note moyenne sur 90 jours"
+			aria-label="Évolution de la note moyenne sur 30 jours"
 			className="block"
 		>
-			<title>Évolution de la note moyenne sur 90 jours</title>
+			<title>Évolution de la note moyenne sur 30 jours</title>
 			{gridlines.map((v) => (
 				<g key={v}>
 					<line
@@ -58,7 +85,7 @@ export function SparkChart() {
 						fontSize="10"
 						fill="var(--color-ink-mute)"
 					>
-						{v.toString().replace(".", ",")}★
+						{v.toFixed(1).replace(".", ",")}★
 					</text>
 				</g>
 			))}
@@ -93,4 +120,47 @@ export function SparkChart() {
 			) : null}
 		</svg>
 	);
+}
+
+function EmptyState() {
+	return (
+		<div className="flex h-[160px] items-center justify-center rounded-lg bg-bg-deep/40 px-4 text-center">
+			<p className="m-0 text-[13px] text-ink-mute leading-[1.5]">
+				Pas encore assez de données pour tracer une évolution.
+				<br />
+				La courbe apparaîtra dès quelques avis reçus.
+			</p>
+		</div>
+	);
+}
+
+/*
+  Comble les jours sans avis avec la dernière valeur connue pour éviter
+  les trous dans la courbe. Les jours initiaux sans donnée (avant le
+  premier avis) restent null — pas de valeur à extrapoler vers la gauche.
+*/
+function carryForward(points: readonly SparkPoint[]): readonly SparkPoint[] {
+	let last: number | null = null;
+	return points.map((p) => {
+		if (p.avgRating != null) {
+			last = p.avgRating;
+			return p;
+		}
+		return { day: p.day, avgRating: last };
+	});
+}
+
+/*
+  Choisit 3 gridlines sympa dans [min, max]. Simple heuristique : le
+  min, le max et le milieu. Arrondis à 0.5 près pour que les libellés
+  restent propres (« 3,5★ », « 4★ », « 4,5★ »).
+*/
+function pickGridlines(min: number, max: number): readonly number[] {
+	const round = (v: number) => Math.round(v * 2) / 2;
+	const bottom = round(min);
+	const top = round(max);
+	if (bottom === top) return [bottom];
+	const mid = round((bottom + top) / 2);
+	if (mid === bottom || mid === top) return [bottom, top];
+	return [bottom, mid, top];
 }
