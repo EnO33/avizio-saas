@@ -1,4 +1,3 @@
-import { UserButton } from "@clerk/tanstack-react-start";
 import { Link, useLocation } from "@tanstack/react-router";
 import type { LucideIcon } from "lucide-react";
 import {
@@ -10,6 +9,7 @@ import {
 } from "lucide-react";
 import { Logo } from "#/components/ui/logo";
 import { OrgSwitcher } from "./org-switcher";
+import { UserMenu } from "./user-menu";
 
 type NavId =
 	| "dashboard"
@@ -145,19 +145,7 @@ export function Sidebar({
 					</div>
 				) : null}
 
-				<UserButton
-					appearance={{
-						elements: {
-							rootBox: "w-full",
-							userButtonTrigger:
-								"w-full rounded-md p-1.5 hover:bg-paper/50 focus:shadow-none",
-							userButtonBox: "w-full flex-row-reverse justify-end gap-2",
-							userButtonOuterIdentifier: "text-[12.5px] text-ink-soft truncate",
-							avatarBox: "size-6",
-						},
-					}}
-					showName
-				/>
+				<UserMenu />
 			</div>
 		</aside>
 	);
