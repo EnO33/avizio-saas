@@ -1,4 +1,3 @@
-import { OrganizationSwitcher, UserButton } from "@clerk/tanstack-react-start";
 import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
 import { EnsureActiveOrganization } from "#/components/auth/ensure-active-organization";
@@ -38,16 +37,8 @@ function Dashboard() {
 
 	return (
 		<main className="mx-auto max-w-5xl space-y-6 p-8">
-			<header className="flex items-center justify-between">
+			<header>
 				<h1 className="font-bold text-3xl tracking-tight">Dashboard</h1>
-				<div className="flex items-center gap-3">
-					<OrganizationSwitcher
-						hidePersonal
-						afterCreateOrganizationUrl="/dashboard"
-						afterSelectOrganizationUrl="/dashboard"
-					/>
-					<UserButton />
-				</div>
 			</header>
 
 			<OAuthResultBanner connected={connected} error={error} />

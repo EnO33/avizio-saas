@@ -16,6 +16,7 @@ import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as AuthedRouteImport } from './routes/_authed'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthedDashboardRouteImport } from './routes/_authed/dashboard'
+import { Route as AuthedConnectionsRouteImport } from './routes/_authed/connections'
 import { Route as AuthedReviewsIndexRouteImport } from './routes/_authed/reviews/index'
 import { Route as AuthedEstablishmentsIndexRouteImport } from './routes/_authed/establishments/index'
 import { Route as ApiWebhooksClerkRouteImport } from './routes/api/webhooks/clerk'
@@ -56,6 +57,11 @@ const IndexRoute = IndexRouteImport.update({
 const AuthedDashboardRoute = AuthedDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedConnectionsRoute = AuthedConnectionsRouteImport.update({
+  id: '/connections',
+  path: '/connections',
   getParentRoute: () => AuthedRoute,
 } as any)
 const AuthedReviewsIndexRoute = AuthedReviewsIndexRouteImport.update({
@@ -101,6 +107,7 @@ export interface FileRoutesByFullPath {
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
   '/sso-callback': typeof SsoCallbackRoute
+  '/connections': typeof AuthedConnectionsRoute
   '/dashboard': typeof AuthedDashboardRoute
   '/establishments/$id': typeof AuthedEstablishmentsIdRoute
   '/establishments/new': typeof AuthedEstablishmentsNewRoute
@@ -116,6 +123,7 @@ export interface FileRoutesByTo {
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
   '/sso-callback': typeof SsoCallbackRoute
+  '/connections': typeof AuthedConnectionsRoute
   '/dashboard': typeof AuthedDashboardRoute
   '/establishments/$id': typeof AuthedEstablishmentsIdRoute
   '/establishments/new': typeof AuthedEstablishmentsNewRoute
@@ -133,6 +141,7 @@ export interface FileRoutesById {
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
   '/sso-callback': typeof SsoCallbackRoute
+  '/_authed/connections': typeof AuthedConnectionsRoute
   '/_authed/dashboard': typeof AuthedDashboardRoute
   '/_authed/establishments/$id': typeof AuthedEstablishmentsIdRoute
   '/_authed/establishments/new': typeof AuthedEstablishmentsNewRoute
@@ -150,6 +159,7 @@ export interface FileRouteTypes {
     | '/sign-in'
     | '/sign-up'
     | '/sso-callback'
+    | '/connections'
     | '/dashboard'
     | '/establishments/$id'
     | '/establishments/new'
@@ -165,6 +175,7 @@ export interface FileRouteTypes {
     | '/sign-in'
     | '/sign-up'
     | '/sso-callback'
+    | '/connections'
     | '/dashboard'
     | '/establishments/$id'
     | '/establishments/new'
@@ -181,6 +192,7 @@ export interface FileRouteTypes {
     | '/sign-in'
     | '/sign-up'
     | '/sso-callback'
+    | '/_authed/connections'
     | '/_authed/dashboard'
     | '/_authed/establishments/$id'
     | '/_authed/establishments/new'
@@ -253,6 +265,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedDashboardRouteImport
       parentRoute: typeof AuthedRoute
     }
+    '/_authed/connections': {
+      id: '/_authed/connections'
+      path: '/connections'
+      fullPath: '/connections'
+      preLoaderRoute: typeof AuthedConnectionsRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     '/_authed/reviews/': {
       id: '/_authed/reviews/'
       path: '/reviews'
@@ -306,6 +325,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthedRouteChildren {
+  AuthedConnectionsRoute: typeof AuthedConnectionsRoute
   AuthedDashboardRoute: typeof AuthedDashboardRoute
   AuthedEstablishmentsIdRoute: typeof AuthedEstablishmentsIdRoute
   AuthedEstablishmentsNewRoute: typeof AuthedEstablishmentsNewRoute
@@ -315,6 +335,7 @@ interface AuthedRouteChildren {
 }
 
 const AuthedRouteChildren: AuthedRouteChildren = {
+  AuthedConnectionsRoute: AuthedConnectionsRoute,
   AuthedDashboardRoute: AuthedDashboardRoute,
   AuthedEstablishmentsIdRoute: AuthedEstablishmentsIdRoute,
   AuthedEstablishmentsNewRoute: AuthedEstablishmentsNewRoute,
