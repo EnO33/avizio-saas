@@ -1,62 +1,62 @@
-import type { LucideIcon } from "lucide-react";
-import { Bot, CheckCircle2, MessageSquareQuote, Store } from "lucide-react";
-
-type Feature = {
-	icon: LucideIcon;
-	title: string;
-	body: string;
+type Stat = {
+	readonly index: string;
+	readonly headline: string;
+	readonly body: string;
 };
 
-const features: readonly Feature[] = [
+const STATS: readonly Stat[] = [
 	{
-		icon: Bot,
-		title: "IA contextualisée",
-		body: "Ton (chaleureux, pro, direct), métier, contexte de votre établissement — chaque réponse est pensée pour vous.",
+		index: "01",
+		headline: "30 min/jour",
+		body: "économisées sur la gestion des avis",
 	},
 	{
-		icon: MessageSquareQuote,
-		title: "Google, TripAdvisor, Trustpilot",
-		body: "Tous vos avis au même endroit. Connectez vos comptes en 2 minutes, Avizio fait le reste.",
+		index: "02",
+		headline: "+0,4 ★",
+		body: "de moyenne sur 90 jours — clients inscrits",
 	},
 	{
-		icon: CheckCircle2,
-		title: "Validation avant publication",
-		body: "L'IA propose, vous décidez. Éditez en 1 clic, publiez quand ça vous va — zéro dérapage.",
+		index: "03",
+		headline: "3 plateformes",
+		body: "centralisées : Google, TripAdvisor, Trustpilot",
 	},
 	{
-		icon: Store,
-		title: "Multi-établissements",
-		body: "Un seul tableau de bord pour 1 à 5 établissements. Idéal pour les petits groupes et les indépendants qui s'étendent.",
+		index: "04",
+		headline: "RGPD",
+		body: "données hébergées en France, chiffrées",
 	},
 ];
 
+/**
+ * Bloc de stats sous la hero — 4 items numérotés avec chiffre serif
+ * géant accent-ink. Intentionnellement sans cadre ni ombre : le
+ * border-top fait toute la structure. Responsive via `auto-fit
+ * minmax(260px, 1fr)` : 4 colonnes sur desktop, 2 sur tablette,
+ * 1 sur mobile sans media query.
+ */
 export function Features() {
 	return (
-		<section id="features" className="border-neutral-200 border-t bg-white">
-			<div className="mx-auto max-w-6xl px-6 py-20">
-				<div className="mx-auto max-w-2xl text-center">
-					<h2 className="font-bold text-3xl text-neutral-900 tracking-tight md:text-4xl">
-						Tout ce qu'il faut pour garder une bonne réputation en ligne
-					</h2>
-					<p className="mt-4 text-lg text-neutral-600">
-						Conçu pour les restaurateurs, hôteliers et commerçants qui veulent
-						répondre vite et bien — sans y passer leurs soirées.
-					</p>
-				</div>
-				<div className="mt-12 grid grid-cols-1 gap-6 md:grid-cols-2">
-					{features.map((f) => (
-						<article
-							key={f.title}
-							className="rounded-lg border border-neutral-200 bg-white p-6"
-						>
-							<f.icon className="size-6 text-amber-700" />
-							<h3 className="mt-4 font-semibold text-lg text-neutral-900">
-								{f.title}
-							</h3>
-							<p className="mt-2 text-neutral-600 text-sm">{f.body}</p>
-						</article>
-					))}
-				</div>
+		<section
+			id="features"
+			className="mx-auto max-w-[1200px] px-7 py-14 md:py-16"
+		>
+			<div
+				className="grid gap-5"
+				style={{ gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))" }}
+			>
+				{STATS.map((stat) => (
+					<div key={stat.index} className="border-line border-t px-1 pt-7 pb-0">
+						<div className="mb-2.5 font-mono text-[10.5px] text-ink-mute">
+							{stat.index}
+						</div>
+						<div className="mb-2.5 font-serif text-[38px] text-accent-ink leading-[1]">
+							{stat.headline}
+						</div>
+						<div className="text-[13.5px] text-ink-soft leading-[1.5]">
+							{stat.body}
+						</div>
+					</div>
+				))}
 			</div>
 		</section>
 	);

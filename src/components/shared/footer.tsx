@@ -1,39 +1,28 @@
+/**
+ * Footer minimal à la française — copyright à gauche, liens légaux
+ * à droite sur une seule ligne. Pas de newsletter ni de grand menu :
+ * la landing tient déjà son propre discours au-dessus, le footer sert
+ * juste de clôture visuelle et de respect RGPD (accès aux CGU).
+ */
 export function Footer() {
 	const year = new Date().getFullYear();
 	return (
-		<footer className="border-neutral-200 border-t bg-neutral-50">
-			<div className="mx-auto max-w-6xl px-6 py-12">
-				<div className="flex flex-col items-start justify-between gap-8 md:flex-row md:items-center">
-					<div>
-						<p className="font-bold text-neutral-900 text-xl tracking-tight">
-							Avizio
-						</p>
-						<p className="mt-1 text-neutral-600 text-sm">
-							La gestion des avis clients, pensée pour les commerces de
-							proximité.
-						</p>
-					</div>
-					<nav className="flex flex-wrap gap-x-6 gap-y-2 text-neutral-600 text-sm">
-						<a
-							href="mailto:contact@avizio.fr"
-							className="hover:text-neutral-900"
-						>
-							Contact
-						</a>
-						<a href="#pricing" className="hover:text-neutral-900">
-							Tarifs
-						</a>
-						<a href="/legal/terms" className="hover:text-neutral-900">
-							CGU
-						</a>
-						<a href="/legal/privacy" className="hover:text-neutral-900">
-							Confidentialité
-						</a>
-					</nav>
-				</div>
-				<p className="mt-8 text-neutral-500 text-xs">
-					© {year} Avizio. Fait à Lyon avec ☕ et ❤️.
-				</p>
+		<footer className="mt-10 border-line-soft border-t">
+			<div className="mx-auto flex max-w-[1200px] flex-col items-start justify-between gap-4 px-7 py-8 text-[12px] text-ink-mute sm:flex-row sm:items-center">
+				<span>© {year} Avizio · Fait avec ❤ à Lyon</span>
+				<nav className="flex flex-wrap gap-x-4 gap-y-1">
+					<a href="/legal/terms" className="hover:text-ink-soft">
+						CGU
+					</a>
+					<span aria-hidden="true">·</span>
+					<a href="/legal/privacy" className="hover:text-ink-soft">
+						Confidentialité
+					</a>
+					<span aria-hidden="true">·</span>
+					<a href="mailto:hello@avizio.fr" className="hover:text-ink-soft">
+						Contact
+					</a>
+				</nav>
 			</div>
 		</footer>
 	);
