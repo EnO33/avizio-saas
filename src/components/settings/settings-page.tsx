@@ -3,6 +3,7 @@ import { SettingsSubNav } from "#/components/establishments/settings-sub-nav";
 import { AccountSection } from "./account-section";
 import { ComingSoonSection } from "./coming-soon-section";
 import { OrganizationSection } from "./organization-section";
+import { TeamSection } from "./team-section";
 
 const SUB_NAV_ITEMS = [
 	{ id: "organization", label: "Organisation" },
@@ -53,11 +54,7 @@ export function SettingsPage() {
 
 				<div className="flex flex-col gap-6">
 					<OrganizationSection />
-					<ComingSoonSection
-						id="team"
-						title="Équipe"
-						description="Membres de votre espace Avizio — ont accès à tous les établissements. La gestion des invitations, des rôles et des retraits arrive bientôt."
-					/>
+					<TeamSection />
 					<ComingSoonSection
 						id="billing"
 						title="Facturation"
