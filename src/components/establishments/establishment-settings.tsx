@@ -171,17 +171,14 @@ export function EstablishmentSettings({ establishment }: Props) {
 	return (
 		<form
 			onSubmit={form.handleSubmit(handle)}
-			className="mx-auto max-w-[1180px] px-10 py-8"
+			className="mx-auto max-w-[1180px] px-4 py-6 sm:px-6 md:px-10 md:py-8"
 			noValidate
 		>
-			<div className="mb-8">
+			<div className="mb-6 md:mb-8">
 				<div className="font-mono text-[12px] text-ink-mute uppercase tracking-[0.08em]">
 					Établissement
 				</div>
-				<h1
-					className="m-[4px_0_4px] font-serif font-normal text-ink tracking-[-0.02em]"
-					style={{ fontSize: 40 }}
-				>
+				<h1 className="m-[4px_0_4px] font-serif font-normal text-[30px] text-ink tracking-[-0.02em] sm:text-[40px]">
 					{establishment.name}
 				</h1>
 				<p className="m-0 text-[14px] text-ink-soft">
@@ -189,7 +186,7 @@ export function EstablishmentSettings({ establishment }: Props) {
 				</p>
 			</div>
 
-			<div className="grid gap-10" style={{ gridTemplateColumns: "200px 1fr" }}>
+			<div className="grid grid-cols-1 gap-6 lg:grid-cols-[200px_1fr] lg:gap-10">
 				<SettingsSubNav
 					items={SUB_NAV_ITEMS}
 					sectionSelector="section[data-settings-section]"
@@ -215,9 +212,11 @@ export function EstablishmentSettings({ establishment }: Props) {
 						</p>
 					) : null}
 
-					<div className="flex items-center justify-end gap-2.5">
+					<div className="flex flex-col items-stretch gap-2.5 sm:flex-row sm:items-center sm:justify-end">
 						{savedAt && !isDirty ? (
-							<span className="text-[12px] text-green">Enregistré ✓</span>
+							<span className="text-[12px] text-green sm:self-center">
+								Enregistré ✓
+							</span>
 						) : null}
 						<Button
 							variant="ghost"
@@ -268,10 +267,7 @@ function GeneralSection({ form }: FormProp) {
 							</p>
 						) : null}
 					</Field>
-					<div
-						className="grid gap-3"
-						style={{ gridTemplateColumns: "2fr 1fr" }}
-					>
+					<div className="grid grid-cols-1 gap-3 sm:grid-cols-[2fr_1fr]">
 						<Field label="Ville">
 							<Input {...form.register("city")} />
 							{form.formState.errors.city?.message ? (
@@ -366,10 +362,7 @@ function ToneSection({
 					Appliqué à toutes les réponses de cet établissement. Vous pourrez le
 					changer pour chaque avis.
 				</p>
-				<div
-					className="grid gap-2.5"
-					style={{ gridTemplateColumns: "1fr 1fr 1fr" }}
-				>
+				<div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3">
 					{TONE_OPTIONS.map((opt) => (
 						<ChoiceCard
 							key={opt.value}

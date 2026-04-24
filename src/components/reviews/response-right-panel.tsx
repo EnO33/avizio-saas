@@ -163,7 +163,7 @@ export function ResponseRightPanel({
 	};
 
 	return (
-		<div className="flex min-w-0 flex-col px-8 pt-7 pb-14">
+		<div className="flex min-w-0 flex-col px-4 pt-6 pb-10 sm:px-6 md:px-8 md:pt-7 md:pb-14">
 			<div className="mb-[18px] flex items-center justify-between">
 				<div>
 					<div className="font-mono text-[11px] text-ink-mute uppercase tracking-[0.06em]">
@@ -186,10 +186,7 @@ export function ResponseRightPanel({
 
 			<div className="mb-3.5">
 				<div className="mb-2 text-[11.5px] text-ink-mute">TON</div>
-				<div
-					className="grid gap-1.5"
-					style={{ gridTemplateColumns: "1fr 1fr 1fr" }}
-				>
+				<div className="grid grid-cols-1 gap-1.5 sm:grid-cols-3">
 					{TONE_OPTIONS.map((opt) => (
 						<ChoiceCard
 							key={opt.value}
@@ -232,7 +229,7 @@ export function ResponseRightPanel({
 				</p>
 			) : null}
 
-			<div className="mt-5 flex items-center gap-2.5">
+			<div className="mt-5 flex flex-col items-stretch gap-2.5 sm:flex-row sm:items-center">
 				<Button
 					variant="outline"
 					size="md"
@@ -241,7 +238,7 @@ export function ResponseRightPanel({
 				>
 					{saving ? "Enregistrement…" : "Enregistrer le brouillon"}
 				</Button>
-				<div className="flex-1" />
+				<div className="hidden sm:block sm:flex-1" />
 				<Button variant="ghost" size="md" disabled>
 					Ignorer cet avis
 				</Button>

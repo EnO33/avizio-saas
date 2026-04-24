@@ -23,7 +23,7 @@ export function ResponseLeftPanel({ review }: Props) {
 	const initials = getReviewInitials(review.authorName);
 
 	return (
-		<div className="overflow-auto border-line-soft border-r bg-bg-deep px-8 py-7">
+		<div className="border-line-soft border-b bg-bg-deep px-4 py-6 sm:px-6 md:px-8 md:py-7 lg:overflow-auto lg:border-r lg:border-b-0">
 			<Link
 				to="/reviews"
 				className="mb-5 inline-flex cursor-pointer items-center gap-1.5 border-none bg-transparent p-0 text-[12.5px] text-ink-soft hover:text-ink"
@@ -61,7 +61,7 @@ export function ResponseLeftPanel({ review }: Props) {
 				</div>
 			</div>
 
-			<div className="rounded-xl border border-line-soft bg-paper px-[26px] py-6 font-serif text-[18px] text-ink italic leading-[1.6]">
+			<div className="rounded-xl border border-line-soft bg-paper px-4 py-5 font-serif text-[17px] text-ink italic leading-[1.6] sm:px-[26px] sm:py-6 sm:text-[18px]">
 				<p className="whitespace-pre-wrap">« {review.content} »</p>
 			</div>
 

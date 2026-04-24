@@ -71,7 +71,7 @@ export function SettingsSubNav({ items, sectionSelector }: Props) {
 		<nav
 			ref={containerRef}
 			aria-label="Paramètres"
-			className="sticky top-[90px] self-start"
+			className="-mx-4 sticky top-[60px] z-[4] flex gap-1 overflow-x-auto border-line-soft border-b bg-bg px-4 py-2 lg:top-[90px] lg:mx-0 lg:flex-col lg:gap-0 lg:self-start lg:overflow-visible lg:border-b-0 lg:bg-transparent lg:px-0 lg:py-0"
 		>
 			{items.map((item) => {
 				const active = activeId === item.id;
@@ -82,7 +82,7 @@ export function SettingsSubNav({ items, sectionSelector }: Props) {
 						onClick={item.disabled ? undefined : onClick(item.id)}
 						aria-current={active ? "true" : undefined}
 						className={[
-							"mb-0.5 block rounded-md px-3 py-2 text-[13px] transition-colors",
+							"shrink-0 whitespace-nowrap rounded-md px-3 py-2 text-[13px] transition-colors lg:mb-0.5 lg:block",
 							item.disabled
 								? "cursor-not-allowed text-ink-mute opacity-50"
 								: active

@@ -27,13 +27,7 @@ function ReviewDetailPage() {
 	}
 
 	return (
-		<div
-			className="grid"
-			style={{
-				gridTemplateColumns: "1fr 1fr",
-				minHeight: "calc(100vh - 60px)",
-			}}
-		>
+		<div className="grid min-h-[calc(100vh-60px)] grid-cols-1 lg:grid-cols-2">
 			<ResponseLeftPanel review={review} />
 			<ResponseRightPanel
 				review={review}

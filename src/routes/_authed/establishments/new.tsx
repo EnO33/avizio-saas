@@ -106,7 +106,7 @@ function NewEstablishmentPage() {
 	const isSubmitting = form.formState.isSubmitting;
 
 	return (
-		<div className="mx-auto max-w-[600px] px-10 py-8">
+		<div className="mx-auto max-w-[600px] px-4 py-6 sm:px-6 md:px-10 md:py-8">
 			<Link
 				to="/establishments"
 				className="mb-[22px] inline-flex items-center gap-1.5 text-[12.5px] text-ink-soft hover:text-ink"
@@ -118,10 +118,7 @@ function NewEstablishmentPage() {
 			<div className="font-mono text-[11px] text-ink-mute uppercase tracking-[0.08em]">
 				Nouvel établissement
 			</div>
-			<h1
-				className="m-[6px_0_10px] font-serif font-normal text-ink tracking-[-0.02em]"
-				style={{ fontSize: 40 }}
-			>
+			<h1 className="m-[6px_0_10px] font-serif font-normal text-[30px] text-ink tracking-[-0.02em] sm:text-[40px]">
 				Une <span className="text-accent-ink italic">nouvelle adresse.</span>
 			</h1>
 			<p className="mb-8 text-[14px] text-ink-soft">
@@ -143,10 +140,7 @@ function NewEstablishmentPage() {
 							) : null}
 						</Field>
 
-						<div
-							className="grid gap-3"
-							style={{ gridTemplateColumns: "2fr 1fr" }}
-						>
+						<div className="grid grid-cols-1 gap-3 sm:grid-cols-[2fr_1fr]">
 							<Field label="Ville">
 								<Input {...form.register("city")} placeholder="Lyon" />
 								{form.formState.errors.city?.message ? (
@@ -199,10 +193,7 @@ function NewEstablishmentPage() {
 							label="Ton par défaut"
 							help="Tu pourras le changer à chaque réponse."
 						>
-							<div
-								className="grid gap-2"
-								style={{ gridTemplateColumns: "1fr 1fr 1fr" }}
-							>
+							<div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
 								{TONE_OPTIONS.map((opt) => (
 									<ChoiceCard
 										key={opt.value}

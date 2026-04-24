@@ -24,7 +24,7 @@ export function Tabs<TId extends string>({
 	onChange,
 }: Props<TId>) {
 	return (
-		<div className="flex gap-1 border-line-soft border-b">
+		<div className="flex gap-1 overflow-x-auto border-line-soft border-b">
 			{tabs.map((t) => {
 				const active = value === t.id;
 				return (
@@ -33,7 +33,7 @@ export function Tabs<TId extends string>({
 						type="button"
 						onClick={() => onChange(t.id)}
 						className={[
-							"-mb-px inline-flex items-center gap-1.5 border-b-2 bg-transparent px-3.5 py-2.5 font-medium text-[13px] transition-colors",
+							"-mb-px inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap border-b-2 bg-transparent px-3.5 py-2.5 font-medium text-[13px] transition-colors",
 							active
 								? "border-accent text-ink"
 								: "border-transparent text-ink-mute hover:text-ink-soft",

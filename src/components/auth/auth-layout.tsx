@@ -38,15 +38,12 @@ export function AuthLayout({
 		<div className="flex min-h-screen bg-bg">
 			<LeftPanel mode={mode} />
 
-			<div className="flex flex-1 items-center justify-center p-10">
+			<div className="flex flex-1 items-center justify-center p-6 sm:p-10">
 				<div key={mode} className="animate-fade-up w-full max-w-[420px]">
 					<div className="mb-2.5 font-mono text-[11px] text-ink-mute uppercase tracking-[0.08em]">
 						{kicker}
 					</div>
-					<h1
-						className="m-[0_0_10px] font-serif font-normal text-ink tracking-[-0.02em] leading-[1.05]"
-						style={{ fontSize: 40 }}
-					>
+					<h1 className="m-[0_0_10px] font-serif font-normal text-[30px] text-ink tracking-[-0.02em] leading-[1.05] sm:text-[40px]">
 						{heading}
 					</h1>
 					<p className="mb-7 text-[14px] text-ink-soft">{subtitle}</p>
