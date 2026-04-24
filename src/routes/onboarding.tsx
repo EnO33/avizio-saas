@@ -208,15 +208,12 @@ function OnboardingPage() {
 		<div className="flex min-h-screen bg-bg">
 			<LeftPanel step={step} />
 
-			<div className="flex flex-1 items-center justify-center p-10">
+			<div className="flex flex-1 items-center justify-center p-6 sm:p-10">
 				<div key={step} className="animate-fade-up w-full max-w-[480px]">
 					<div className="mb-2.5 font-mono text-[12px] text-ink-mute">
 						{String(step + 1).padStart(2, "0")} / 03
 					</div>
-					<h1
-						className="m-[0_0_12px] font-serif font-normal text-ink tracking-[-0.02em] leading-[1.05]"
-						style={{ fontSize: 44 }}
-					>
+					<h1 className="m-[0_0_12px] font-serif font-normal text-[32px] text-ink tracking-[-0.02em] leading-[1.05] sm:text-[44px]">
 						{STEPS[step].title}
 					</h1>
 					<p className="mb-8 text-[15px] text-ink-soft">
@@ -425,7 +422,7 @@ function Step1({
 }) {
 	return (
 		<div className="flex flex-col gap-4">
-			<div className="grid gap-3" style={{ gridTemplateColumns: "2fr 1fr" }}>
+			<div className="grid grid-cols-1 gap-3 sm:grid-cols-[2fr_1fr]">
 				<Field label="Nom de l'établissement">
 					<Input
 						value={estName}
@@ -468,10 +465,7 @@ function Step1({
 				label="Ton par défaut des réponses"
 				help="Vous pourrez le changer à chaque avis."
 			>
-				<div
-					className="grid gap-2"
-					style={{ gridTemplateColumns: "1fr 1fr 1fr" }}
-				>
+				<div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
 					{TONE_OPTIONS.map((opt) => (
 						<ChoiceCard
 							key={opt.value}

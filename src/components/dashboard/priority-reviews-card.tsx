@@ -23,7 +23,7 @@ type Props = {
 export function PriorityReviewsCard({ reviews, totalPending }: Props) {
 	return (
 		<Card padding={0}>
-			<div className="flex items-center justify-between border-line-soft border-b px-[22px] py-[18px]">
+			<div className="flex items-center justify-between border-line-soft border-b px-4 md:px-[22px] py-[18px]">
 				<div>
 					<div className="font-serif font-normal text-[22px]">
 						À traiter en priorité
@@ -64,7 +64,7 @@ function PriorityRow({ review }: { review: ReviewSummary }) {
 		<Link
 			to="/reviews/$id"
 			params={{ id: review.id }}
-			className="group flex w-full gap-3.5 border-line-soft border-b px-[22px] py-4 text-left transition-colors hover:bg-bg-deep"
+			className="group flex w-full gap-3.5 border-line-soft border-b px-4 md:px-[22px] py-4 text-left transition-colors hover:bg-bg-deep"
 		>
 			<Avatar initial={initial} size={36} />
 			<div className="min-w-0 flex-1">
@@ -96,7 +96,7 @@ function PriorityRow({ review }: { review: ReviewSummary }) {
 
 function EmptyPriority() {
 	return (
-		<div className="px-[22px] py-10 text-center">
+		<div className="px-4 md:px-[22px] py-10 text-center">
 			<div className="mx-auto mb-3 flex size-12 items-center justify-center rounded-full bg-bg-deep">
 				<span aria-hidden="true" className="size-3 rounded-full bg-green" />
 			</div>

@@ -88,14 +88,11 @@ function ConnectionsPage() {
 	];
 
 	return (
-		<div className="mx-auto max-w-[880px] px-10 py-8">
+		<div className="mx-auto max-w-[880px] px-4 py-6 sm:px-6 md:px-10 md:py-8">
 			<div className="font-mono text-[12px] text-ink-mute uppercase tracking-[0.08em]">
 				Connexions
 			</div>
-			<h1
-				className="m-[6px_0_4px] font-serif font-normal text-ink tracking-[-0.02em]"
-				style={{ fontSize: 40 }}
-			>
+			<h1 className="m-[6px_0_4px] font-serif font-normal text-[30px] text-ink tracking-[-0.02em] sm:text-[40px]">
 				Plateformes.
 			</h1>
 			<p className="m-[0_0_32px] text-[14px] text-ink-soft">
@@ -113,10 +110,7 @@ function ConnectionsPage() {
 					<Sparkles size={16} strokeWidth={1.75} />
 					<div className="font-serif text-[20px]">Comment ça marche ?</div>
 				</div>
-				<div
-					className="grid gap-[18px]"
-					style={{ gridTemplateColumns: "1fr 1fr 1fr" }}
-				>
+				<div className="grid grid-cols-1 gap-[18px] md:grid-cols-3">
 					{[
 						{
 							n: "01",
@@ -212,14 +206,14 @@ function PlatformRow({ row }: { row: PlatformRowData }) {
 	return (
 		<Card padding={0} className="overflow-hidden">
 			<div
-				className="flex items-center gap-4 px-[22px] py-[18px]"
+				className="flex flex-wrap items-center gap-3 px-4 py-4 sm:gap-4 md:px-[22px] md:py-[18px]"
 				style={{ opacity: row.state === "soon" ? 0.85 : 1 }}
 			>
 				<div className="flex size-12 shrink-0 items-center justify-center rounded-[10px] bg-bg-deep">
 					<PlatformIcon platform={row.platform} size={28} />
 				</div>
 				<div className="min-w-0 flex-1">
-					<div className="mb-[3px] flex items-center gap-2.5">
+					<div className="mb-[3px] flex flex-wrap items-center gap-x-2.5 gap-y-1">
 						<div className="font-serif text-[20px] tracking-[-0.01em] leading-[1.15]">
 							{label}
 						</div>
@@ -236,7 +230,7 @@ function PlatformRow({ row }: { row: PlatformRowData }) {
 					</div>
 					<div className="text-[12.5px] text-ink-soft">{metaLine}</div>
 				</div>
-				<div className="flex shrink-0 gap-2">
+				<div className="flex w-full shrink-0 justify-end gap-2 sm:w-auto">
 					<RowActions row={row} />
 				</div>
 			</div>
@@ -248,8 +242,8 @@ function PlatformRow({ row }: { row: PlatformRowData }) {
 
 function ConnectedFooter() {
 	return (
-		<div className="flex items-center justify-between border-line-soft border-t bg-bg-deep px-[22px] py-2.5 text-[11.5px] text-ink-mute">
-			<div className="flex items-center gap-3">
+		<div className="flex items-center justify-between border-line-soft border-t bg-bg-deep px-4 py-2.5 text-[11.5px] text-ink-mute md:px-[22px]">
+			<div className="flex flex-wrap items-center gap-x-3 gap-y-1">
 				<IndicatorDot label="Lecture avis · OK" />
 				<IndicatorDot label="Publication réponses · en attente d'approbation Google" />
 			</div>

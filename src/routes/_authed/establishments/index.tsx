@@ -15,16 +15,16 @@ function EstablishmentsPage() {
 	const count = establishments.length;
 
 	return (
-		<div className="mx-auto px-10 py-8" style={{ maxWidth: 1280 }}>
-			<div className="mb-8 flex items-end justify-between gap-4">
+		<div
+			className="mx-auto px-4 py-6 sm:px-6 md:px-10 md:py-8"
+			style={{ maxWidth: 1280 }}
+		>
+			<div className="mb-8 flex flex-col items-start gap-4 sm:flex-row sm:items-end sm:justify-between">
 				<div>
 					<div className="font-mono text-[12px] text-ink-mute uppercase tracking-[0.08em]">
 						Établissements
 					</div>
-					<h1
-						className="m-[6px_0_4px] font-serif font-normal text-ink tracking-[-0.02em]"
-						style={{ fontSize: 40 }}
-					>
+					<h1 className="m-[6px_0_4px] font-serif font-normal text-[30px] text-ink tracking-[-0.02em] sm:text-[40px]">
 						Vos adresses.
 					</h1>
 					<p className="m-0 text-[14px] text-ink-soft">

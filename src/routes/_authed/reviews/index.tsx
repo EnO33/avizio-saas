@@ -77,17 +77,31 @@ function ReviewsInbox() {
 		});
 	};
 
+	/*
+	  En desktop (`lg:`, ≥ 1024px), cliquer une row met à jour le param `id`
+	  pour afficher l'avis dans le panneau preview. En mobile ce panneau est
+	  caché — on navigue plutôt vers `/reviews/$id` pour ouvrir la page
+	  complète de réponse. La bascule se fait à l'exécution via matchMedia :
+	  plus simple qu'un hook de viewport réactif, et suffisant pour un
+	  onClick — au rendu initial la preview est déjà gérée par les classes
+	  responsive.
+	*/
+	const handleSelectReview = (reviewId: string) => {
+		const isDesktop =
+			typeof window !== "undefined" &&
+			window.matchMedia("(min-width: 1024px)").matches;
+		if (isDesktop) {
+			setSearch({ id: reviewId });
+			return;
+		}
+		navigate({ to: "/reviews/$id", params: { id: reviewId } });
+	};
+
 	return (
-		<div
-			className="grid"
-			style={{
-				gridTemplateColumns: "minmax(380px, 440px) 1fr",
-				height: "calc(100vh - 60px)",
-			}}
-		>
+		<div className="grid grid-cols-1 lg:h-[calc(100vh-60px)] lg:grid-cols-[minmax(380px,440px)_1fr]">
 			{/* List column */}
-			<div className="flex min-w-0 flex-col border-line-soft border-r">
-				<div className="px-[22px] pt-5">
+			<div className="flex min-w-0 flex-col lg:border-line-soft lg:border-r">
+				<div className="px-4 pt-5 md:px-[22px]">
 					<div className="mb-3.5 flex items-baseline justify-between">
 						<h1 className="m-0 font-serif font-normal text-[28px] tracking-[-0.02em]">
 							Boîte de réponses
@@ -108,7 +122,7 @@ function ReviewsInbox() {
 					/>
 				</div>
 
-				<div className="px-[22px]">
+				<div className="px-4 md:px-[22px]">
 					<Tabs
 						tabs={[
 							{ id: "new", label: "Nouveaux", count: countBy("new") },
@@ -130,7 +144,7 @@ function ReviewsInbox() {
 					/>
 				</div>
 
-				<div className="flex-1 overflow-auto px-3.5 pt-1.5 pb-5">
+				<div className="flex-1 px-3.5 pt-1.5 pb-5 lg:overflow-auto">
 					{filtered.length === 0 ? (
 						<EmptyInbox hasConnection={hasConnection} />
 					) : (
@@ -139,15 +153,15 @@ function ReviewsInbox() {
 								key={review.id}
 								review={review}
 								selected={selected?.id === review.id}
-								onSelect={() => setSearch({ id: review.id })}
+								onSelect={() => handleSelectReview(review.id)}
 							/>
 						))
 					)}
 				</div>
 			</div>
 
-			{/* Preview pane */}
-			<div className="min-w-0 overflow-auto">
+			{/* Preview pane — caché en mobile, la navigation par row bascule sur /reviews/$id */}
+			<div className="hidden min-w-0 lg:block lg:overflow-auto">
 				{selected ? (
 					<InboxPreview
 						review={selected}
@@ -175,7 +189,7 @@ const PILL_LABELS: Record<PlatformFilter, string> = {
 
 function PlatformPills({ value, onChange }: PlatformPillsProps) {
 	return (
-		<div className="mb-2.5 flex flex-wrap gap-1.5">
+		<div className="-mx-4 md:-mx-0 mb-2.5 flex gap-1.5 overflow-x-auto px-4 md:flex-wrap md:overflow-visible md:px-0">
 			{PLATFORM_VALUES.map((p) => {
 				const active = value === p;
 				return (
@@ -185,7 +199,7 @@ function PlatformPills({ value, onChange }: PlatformPillsProps) {
 						onClick={() => onChange(p)}
 						aria-pressed={active}
 						className={[
-							"rounded-full border px-2.5 py-1 text-[11.5px] transition-colors",
+							"shrink-0 rounded-full border px-2.5 py-1 text-[11.5px] transition-colors",
 							active
 								? "border-ink bg-ink text-bg"
 								: "border-line bg-paper text-ink-soft hover:text-ink",
