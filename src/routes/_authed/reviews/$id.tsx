@@ -1,7 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { DraftCard } from "#/components/reviews/draft-card";
-import { GenerateDraftButton } from "#/components/reviews/generate-draft-button";
-import { ReviewDetailCard } from "#/components/reviews/review-detail-card";
+import { useState } from "react";
+import { ResponseApprovedConfirm } from "#/components/reviews/response-approved-confirm";
+import { ResponseHistoryDrawer } from "#/components/reviews/response-history-drawer";
+import { ResponseLeftPanel } from "#/components/reviews/response-left-panel";
+import { ResponseRightPanel } from "#/components/reviews/response-right-panel";
 import { getReviewDetail } from "#/server/fns/responses";
 
 export const Route = createFileRoute("/_authed/reviews/$id")({
@@ -13,72 +15,62 @@ export const Route = createFileRoute("/_authed/reviews/$id")({
 
 function ReviewDetailPage() {
 	const { detail } = Route.useLoaderData();
+	const [historyOpen, setHistoryOpen] = useState(false);
+	const [justPublished, setJustPublished] = useState(false);
 
-	if (!detail) {
-		return (
-			<main className="mx-auto max-w-3xl space-y-4 p-8">
-				<Link
-					to="/reviews"
-					className="text-neutral-500 text-sm hover:text-neutral-900"
-				>
-					← Avis
-				</Link>
-				<div className="rounded-lg border border-amber-200 bg-amber-50 p-6">
-					<h1 className="font-semibold text-amber-900 text-lg">
-						Avis introuvable
-					</h1>
-					<p className="mt-1 text-amber-800 text-sm">
-						Il a peut-être été supprimé, ou ne fait pas partie de ton
-						organisation active.
-					</p>
-				</div>
-			</main>
-		);
-	}
+	if (!detail) return <ReviewNotFound />;
 
 	const { review, establishment, responses } = detail;
 
+	if (justPublished) {
+		return <ResponseApprovedConfirm review={review} />;
+	}
+
 	return (
-		<main className="mx-auto max-w-3xl space-y-6 p-8">
-			<div>
-				<Link
-					to="/reviews"
-					className="text-neutral-500 text-sm hover:text-neutral-900"
-				>
-					← Avis
-				</Link>
-				<h1 className="mt-2 font-bold text-3xl tracking-tight">
-					Répondre à l'avis
+		<div
+			className="grid"
+			style={{
+				gridTemplateColumns: "1fr 1fr",
+				minHeight: "calc(100vh - 60px)",
+			}}
+		>
+			<ResponseLeftPanel review={review} />
+			<ResponseRightPanel
+				review={review}
+				drafts={responses}
+				defaultTone={establishment.defaultTone}
+				onPublished={() => setJustPublished(true)}
+				onOpenHistory={() => setHistoryOpen(true)}
+			/>
+
+			<ResponseHistoryDrawer
+				open={historyOpen}
+				review={review}
+				drafts={responses}
+				onClose={() => setHistoryOpen(false)}
+			/>
+		</div>
+	);
+}
+
+function ReviewNotFound() {
+	return (
+		<main className="mx-auto max-w-[560px] space-y-4 p-10">
+			<Link
+				to="/reviews"
+				className="text-[12.5px] text-ink-soft hover:text-ink"
+			>
+				← Boîte de réponses
+			</Link>
+			<div className="rounded-lg border border-[oklch(0.88_0.04_25)] bg-[oklch(0.95_0.03_25)] p-6">
+				<h1 className="font-serif text-[22px] text-[oklch(0.4_0.12_25)]">
+					Avis introuvable
 				</h1>
+				<p className="mt-1 text-[13px] text-[oklch(0.45_0.12_25)]">
+					Il a peut-être été supprimé, ou ne fait pas partie de votre
+					organisation active.
+				</p>
 			</div>
-
-			<ReviewDetailCard review={review} establishment={establishment} />
-
-			<section className="space-y-4">
-				<div className="flex items-baseline justify-between gap-4">
-					<h2 className="font-semibold text-lg">Brouillons de réponse</h2>
-					<span className="text-neutral-500 text-sm">
-						{responses.length === 0
-							? "Aucun brouillon pour l'instant."
-							: responses.length === 1
-								? "1 brouillon"
-								: `${responses.length} brouillons`}
-					</span>
-				</div>
-
-				<GenerateDraftButton
-					reviewId={review.id}
-					defaultTone={establishment.defaultTone}
-				/>
-
-				{responses.length > 0 ? (
-					<div className="space-y-3">
-						{responses.map((response) => (
-							<DraftCard key={response.id} response={response} />
-						))}
-					</div>
-				) : null}
-			</section>
 		</main>
 	);
 }
