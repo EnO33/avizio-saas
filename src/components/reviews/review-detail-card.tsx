@@ -1,6 +1,6 @@
+import { Stars } from "#/components/ui/stars";
+import { StatusBadge } from "#/components/ui/status-badge";
 import type { BusinessType, Tone } from "#/server/db/queries/establishments";
-import { RatingStars } from "./rating-stars";
-import { ReviewStatusBadge } from "./status-badge";
 
 const BUSINESS_TYPE_FR: Record<BusinessType, string> = {
 	restaurant: "Restaurant",
@@ -45,12 +45,12 @@ export function ReviewDetailCard({ review, establishment }: ReviewDetailProps) {
 						{review.authorName}
 					</div>
 					<div className="mt-1 flex flex-wrap items-center gap-2 text-neutral-500 text-xs">
-						<RatingStars value={review.rating} />
+						<Stars value={review.rating} />
 						<span>·</span>
 						<span>{review.rating}/5</span>
 					</div>
 				</div>
-				<ReviewStatusBadge status={review.status} />
+				<StatusBadge status={review.status} />
 			</div>
 
 			<p className="whitespace-pre-wrap text-neutral-800 text-sm">
