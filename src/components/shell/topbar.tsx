@@ -27,22 +27,27 @@ export function Topbar({ hasNotifications }: Props) {
 						? "Notifications — nouvelles alertes"
 						: "Notifications"
 				}
-				className="relative p-2 text-ink-soft hover:text-ink"
+				className="relative inline-flex size-10 items-center justify-center rounded-md text-ink-soft hover:text-ink focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2 sm:size-9 sm:rounded"
 			>
 				<Bell size={17} strokeWidth={1.75} />
 				{hasNotifications ? (
 					<span
 						aria-hidden="true"
-						className="absolute top-[7px] right-[7px] size-1.5 rounded-full bg-accent"
+						className="absolute top-2 right-2 size-1.5 rounded-full bg-accent"
 					/>
 				) : null}
 			</button>
 
-			<Link to="/reviews" aria-label="Générer une réponse">
+			<Link
+				to="/reviews"
+				aria-label="Générer une réponse"
+				className="rounded-[7px] focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2"
+			>
 				<Button
 					variant="accent"
 					size="sm"
 					icon={<Plus size={14} strokeWidth={1.75} />}
+					className="h-10 w-10 sm:h-8 sm:w-auto"
 				>
 					<span className="hidden sm:inline">Générer une réponse</span>
 				</Button>

@@ -20,7 +20,7 @@ export function Textarea({ variant = "sans", className = "", ...rest }: Props) {
 		<textarea
 			{...rest}
 			className={[
-				"w-full resize-y rounded-lg border border-line bg-paper px-3.5 py-3 text-ink outline-none transition-colors placeholder:text-ink-mute focus:border-accent",
+				"w-full resize-y rounded-lg border border-line bg-paper px-3.5 py-3 text-ink outline-none transition-colors placeholder:text-ink-mute focus:border-accent focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-0",
 				variantClasses,
 				className,
 			].join(" ")}

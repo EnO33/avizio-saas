@@ -109,10 +109,10 @@ function ReviewsInbox() {
 						<button
 							type="button"
 							aria-label="Filtres avancés — bientôt"
-							className="p-1.5 text-ink-mute hover:text-ink"
+							className="-mr-2 inline-flex size-10 items-center justify-center rounded-md text-ink-mute transition-colors hover:text-ink focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2 disabled:opacity-40"
 							disabled
 						>
-							<Filter size={15} strokeWidth={1.75} />
+							<Filter size={16} strokeWidth={1.75} />
 						</button>
 					</div>
 
