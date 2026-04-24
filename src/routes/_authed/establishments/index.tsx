@@ -1,6 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { EmptyEstablishmentsState } from "#/components/establishments/empty-establishments-state";
+import { Plus, Store } from "lucide-react";
 import { EstablishmentsList } from "#/components/establishments/establishments-list";
+import { Button } from "#/components/ui/button";
+import { Card } from "#/components/ui/card";
 import { listEstablishments } from "#/server/fns/establishments";
 
 export const Route = createFileRoute("/_authed/establishments/")({
@@ -10,43 +12,62 @@ export const Route = createFileRoute("/_authed/establishments/")({
 
 function EstablishmentsPage() {
 	const { establishments } = Route.useLoaderData();
+	const count = establishments.length;
 
 	return (
-		<main className="mx-auto max-w-5xl space-y-6 p-8">
-			<header className="flex items-start justify-between gap-4">
+		<div className="mx-auto px-10 py-8" style={{ maxWidth: 1280 }}>
+			<div className="mb-8 flex items-end justify-between gap-4">
 				<div>
-					<Link
-						to="/dashboard"
-						className="text-neutral-500 text-sm hover:text-neutral-900"
-					>
-						← Dashboard
-					</Link>
-					<h1 className="mt-2 font-bold text-3xl tracking-tight">
+					<div className="font-mono text-[12px] text-ink-mute uppercase tracking-[0.08em]">
 						Établissements
+					</div>
+					<h1
+						className="m-[6px_0_4px] font-serif font-normal text-ink tracking-[-0.02em]"
+						style={{ fontSize: 40 }}
+					>
+						Vos adresses.
 					</h1>
-					<p className="mt-1 text-neutral-500 text-sm">
-						{establishments.length === 0
-							? "Tes restaurants, hôtels, cafés…"
-							: establishments.length === 1
-								? "1 établissement"
-								: `${establishments.length} établissements`}
+					<p className="m-0 text-[14px] text-ink-soft">
+						{count === 0
+							? "Ajoutez votre premier établissement pour commencer."
+							: count === 1
+								? "1 établissement · Plan annuel"
+								: `${count} établissements · Plan annuel`}
 					</p>
 				</div>
-				{establishments.length > 0 ? (
-					<Link
-						to="/establishments/new"
-						className="shrink-0 rounded-md bg-neutral-900 px-4 py-2 font-medium text-sm text-white transition hover:bg-neutral-800"
-					>
-						Nouvel établissement
+				{count > 0 ? (
+					<Link to="/establishments/new">
+						<Button
+							variant="accent"
+							size="md"
+							icon={<Plus size={14} strokeWidth={1.75} />}
+						>
+							Ajouter un établissement
+						</Button>
 					</Link>
 				) : null}
-			</header>
+			</div>
 
-			{establishments.length === 0 ? (
-				<EmptyEstablishmentsState />
-			) : (
-				<EstablishmentsList establishments={establishments} />
-			)}
-		</main>
+			<EstablishmentsList establishments={establishments} />
+
+			{/* Carte explicative — rappel de la granularité « un étab = une
+			    identité ». Affichée même quand la liste est vide, ça rassure
+			    l'utilisateur qui démarre sur le produit. */}
+			<Card padding={22} tone="cream" className="mt-6 flex items-start gap-5">
+				<div className="flex size-10 shrink-0 items-center justify-center rounded-[10px] bg-paper text-accent-ink">
+					<Store size={20} strokeWidth={1.75} />
+				</div>
+				<div>
+					<div className="font-serif text-[20px] leading-[1.2]">
+						Un établissement = une identité
+					</div>
+					<p className="mt-1.5 text-[13px] text-ink-soft leading-[1.5]">
+						Chaque établissement a son propre ton, son contexte de marque et ses
+						connexions aux plateformes. Parfait pour gérer plusieurs adresses
+						sans les mélanger.
+					</p>
+				</div>
+			</Card>
+		</div>
 	);
 }
