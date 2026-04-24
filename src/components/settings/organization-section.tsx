@@ -1,4 +1,7 @@
-import { useOrganization } from "@clerk/tanstack-react-start";
+import {
+	useOrganization,
+	useOrganizationList,
+} from "@clerk/tanstack-react-start";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useNavigate, useRouter } from "@tanstack/react-router";
 import { Check } from "lucide-react";
@@ -32,9 +35,13 @@ export function OrganizationSection() {
 	const router = useRouter();
 	const [savedAt, setSavedAt] = useState<Date | null>(null);
 
+	// `values` plutôt que `defaultValues` : quand l'user switch d'org via
+	// le popover de la sidebar, `organization.name` change et RHF resync
+	// le form automatiquement. Avec `defaultValues`, le form resterait
+	// figé sur l'org initialement chargée jusqu'à un hard reload.
 	const form = useForm<FormValues>({
 		resolver: zodResolver(formSchema),
-		defaultValues: { name: organization?.name ?? "" },
+		values: { name: organization?.name ?? "" },
 	});
 
 	if (!organization) return null;
@@ -154,6 +161,7 @@ function OrgMonogramPreview({ name }: { name: string }) {
 
 function DangerZone({ organizationName }: { organizationName: string }) {
 	const { organization } = useOrganization();
+	const orgList = useOrganizationList({ userMemberships: true });
 	const navigate = useNavigate();
 	const [confirmOpen, setConfirmOpen] = useState(false);
 	const [busy, setBusy] = useState(false);
@@ -164,10 +172,29 @@ function DangerZone({ organizationName }: { organizationName: string }) {
 		setBusy(true);
 		setError(null);
 		try {
+			const destroyedId = organization.id;
+			// Snapshot des memberships avant destroy : le cache Clerk peut
+			// avoir un train de retard après l'API call, on filtre nous-mêmes
+			// par id pour décider où rediriger.
+			const snapshot = orgList.userMemberships.data ?? [];
+
 			await organization.destroy();
-			// Clerk clear la session d'org active ; le guard _authed va
-			// renvoyer vers /onboarding au prochain load. On navigue
-			// explicitement pour pas laisser l'user sur une page morte.
+
+			const remaining = snapshot.filter(
+				(m) => m.organization.id !== destroyedId,
+			);
+			if (remaining.length > 0 && remaining[0] && orgList.setActive) {
+				// L'user a d'autres orgs : on bascule directement dessus et
+				// on va sur /dashboard. Évite le détour /onboarding →
+				// /dashboard (auto-activate) qui faisait flasher l'écran.
+				await orgList.setActive({
+					organization: remaining[0].organization.id,
+				});
+				await orgList.userMemberships.revalidate?.();
+				await navigate({ to: "/dashboard", replace: true });
+				return;
+			}
+			// Plus d'org : on part sur /onboarding pour en (re)créer une.
 			await navigate({ to: "/onboarding", replace: true });
 		} catch (err) {
 			setBusy(false);
