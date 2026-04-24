@@ -31,6 +31,19 @@ export const Route = createRootRoute({
 			},
 		],
 		links: [
+			// Preconnect speed-up for the Google Fonts handshake. Explicit
+			// `crossorigin` on the static host, omitted on the API host — per the
+			// pattern Google recommends.
+			{ rel: "preconnect", href: "https://fonts.googleapis.com" },
+			{
+				rel: "preconnect",
+				href: "https://fonts.gstatic.com",
+				crossOrigin: "anonymous",
+			},
+			{
+				rel: "stylesheet",
+				href: "https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap",
+			},
 			{
 				rel: "stylesheet",
 				href: appCss,
