@@ -77,7 +77,7 @@ export function Sidebar({ pendingReviewsCount, trialDaysRemaining }: Props) {
 	const location = useLocation();
 
 	return (
-		<aside className="sticky top-0 flex h-screen w-[232px] flex-col border-line-soft border-r bg-bg-deep px-3.5 py-5">
+		<aside className="sticky top-0 hidden h-screen w-[232px] flex-col border-line-soft border-r bg-bg-deep px-3.5 py-5 md:flex">
 			{/* Logo */}
 			<div className="px-2 pb-5">
 				<Logo size={20} />
