@@ -5,6 +5,7 @@ import {
 import { useRouter } from "@tanstack/react-router";
 import { Check, ChevronDown, Plus } from "lucide-react";
 import { useEffect, useId, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Button } from "#/components/ui/button";
 import { Input } from "#/components/ui/input";
 
@@ -267,6 +268,11 @@ function CreateOrganizationModal({ onClose, onCreated }: CreateOrgModalProps) {
 		try {
 			const created = await orgList.createOrganization({ name: name.trim() });
 			await orgList.setActive({ organization: created.id });
+			// Force le cache paginé de Clerk à recharger — sinon la nouvelle
+			// org n'apparaît pas dans le popover tant que l'user ne refresh
+			// pas. setActive bascule le contexte mais ne touche pas la liste
+			// des memberships côté hook.
+			await orgList.userMemberships.revalidate?.();
 			setBusy(false);
 			await onCreated(created.id);
 		} catch (err) {
@@ -279,7 +285,15 @@ function CreateOrganizationModal({ onClose, onCreated }: CreateOrgModalProps) {
 		}
 	};
 
-	return (
+	/*
+	  Portail vers document.body : la sidebar est un descendant d'une
+	  cellule de grid et crée son propre stacking context, ce qui coince
+	  un `fixed inset-0` dans la colonne gauche — résultat, la topbar
+	  (cellule droite) reste au-dessus du backdrop. En rendant la modale
+	  à la racine du DOM, elle couvre vraiment toute la fenêtre.
+	*/
+	if (typeof document === "undefined") return null;
+	return createPortal(
 		<div className="fixed inset-0 z-[60]">
 			<button
 				type="button"
@@ -343,6 +357,7 @@ function CreateOrganizationModal({ onClose, onCreated }: CreateOrgModalProps) {
 					</div>
 				</form>
 			</div>
-		</div>
+		</div>,
+		document.body,
 	);
 }
