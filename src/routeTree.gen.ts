@@ -16,6 +16,7 @@ import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as AuthedRouteImport } from './routes/_authed'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthedSettingsRouteImport } from './routes/_authed/settings'
 import { Route as AuthedDashboardRouteImport } from './routes/_authed/dashboard'
 import { Route as AuthedConnectionsRouteImport } from './routes/_authed/connections'
 import { Route as AuthedReviewsIndexRouteImport } from './routes/_authed/reviews/index'
@@ -59,6 +60,11 @@ const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AuthedSettingsRoute = AuthedSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => AuthedRoute,
 } as any)
 const AuthedDashboardRoute = AuthedDashboardRouteImport.update({
   id: '/dashboard',
@@ -116,6 +122,7 @@ export interface FileRoutesByFullPath {
   '/sso-callback': typeof SsoCallbackRoute
   '/connections': typeof AuthedConnectionsRoute
   '/dashboard': typeof AuthedDashboardRoute
+  '/settings': typeof AuthedSettingsRoute
   '/establishments/$id': typeof AuthedEstablishmentsIdRoute
   '/establishments/new': typeof AuthedEstablishmentsNewRoute
   '/reviews/$id': typeof AuthedReviewsIdRoute
@@ -133,6 +140,7 @@ export interface FileRoutesByTo {
   '/sso-callback': typeof SsoCallbackRoute
   '/connections': typeof AuthedConnectionsRoute
   '/dashboard': typeof AuthedDashboardRoute
+  '/settings': typeof AuthedSettingsRoute
   '/establishments/$id': typeof AuthedEstablishmentsIdRoute
   '/establishments/new': typeof AuthedEstablishmentsNewRoute
   '/reviews/$id': typeof AuthedReviewsIdRoute
@@ -152,6 +160,7 @@ export interface FileRoutesById {
   '/sso-callback': typeof SsoCallbackRoute
   '/_authed/connections': typeof AuthedConnectionsRoute
   '/_authed/dashboard': typeof AuthedDashboardRoute
+  '/_authed/settings': typeof AuthedSettingsRoute
   '/_authed/establishments/$id': typeof AuthedEstablishmentsIdRoute
   '/_authed/establishments/new': typeof AuthedEstablishmentsNewRoute
   '/_authed/reviews/$id': typeof AuthedReviewsIdRoute
@@ -171,6 +180,7 @@ export interface FileRouteTypes {
     | '/sso-callback'
     | '/connections'
     | '/dashboard'
+    | '/settings'
     | '/establishments/$id'
     | '/establishments/new'
     | '/reviews/$id'
@@ -188,6 +198,7 @@ export interface FileRouteTypes {
     | '/sso-callback'
     | '/connections'
     | '/dashboard'
+    | '/settings'
     | '/establishments/$id'
     | '/establishments/new'
     | '/reviews/$id'
@@ -206,6 +217,7 @@ export interface FileRouteTypes {
     | '/sso-callback'
     | '/_authed/connections'
     | '/_authed/dashboard'
+    | '/_authed/settings'
     | '/_authed/establishments/$id'
     | '/_authed/establishments/new'
     | '/_authed/reviews/$id'
@@ -278,6 +290,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authed/settings': {
+      id: '/_authed/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof AuthedSettingsRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     '/_authed/dashboard': {
       id: '/_authed/dashboard'
       path: '/dashboard'
@@ -347,6 +366,7 @@ declare module '@tanstack/react-router' {
 interface AuthedRouteChildren {
   AuthedConnectionsRoute: typeof AuthedConnectionsRoute
   AuthedDashboardRoute: typeof AuthedDashboardRoute
+  AuthedSettingsRoute: typeof AuthedSettingsRoute
   AuthedEstablishmentsIdRoute: typeof AuthedEstablishmentsIdRoute
   AuthedEstablishmentsNewRoute: typeof AuthedEstablishmentsNewRoute
   AuthedReviewsIdRoute: typeof AuthedReviewsIdRoute
@@ -357,6 +377,7 @@ interface AuthedRouteChildren {
 const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedConnectionsRoute: AuthedConnectionsRoute,
   AuthedDashboardRoute: AuthedDashboardRoute,
+  AuthedSettingsRoute: AuthedSettingsRoute,
   AuthedEstablishmentsIdRoute: AuthedEstablishmentsIdRoute,
   AuthedEstablishmentsNewRoute: AuthedEstablishmentsNewRoute,
   AuthedReviewsIdRoute: AuthedReviewsIdRoute,

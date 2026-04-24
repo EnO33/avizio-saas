@@ -24,9 +24,6 @@ type NavEntry = {
  * bottom-nav mobile parce que c'est une action de setup rare : on préfère
  * garder les 4 actions quotidiennes (dashboard / inbox / étabs / paramètres)
  * avec des touch targets confortables.
- *
- * « Paramètres » pointe pour l'instant vers `/establishments` comme en
- * sidebar — la cible bougera quand un vrai `/settings` org-level arrivera.
  */
 const NAV: readonly NavEntry[] = [
 	{
@@ -53,7 +50,7 @@ const NAV: readonly NavEntry[] = [
 		id: "settings",
 		label: "Paramètres",
 		icon: Settings,
-		to: "/establishments",
+		to: "/settings",
 	},
 ];
 
@@ -65,9 +62,9 @@ type Props = {
 /**
  * Nav sticky en bas d'écran pour mobile (< `md:` = 768px). Remplace la
  * sidebar desktop. Une seule entrée active à la fois — on prend la
- * première qui matche (par ordre d'apparition dans `NAV`), ce qui évite
- * le double-actif Établissements/Paramètres tant qu'ils partagent la
- * même route.
+ * première qui matche (par ordre d'apparition dans `NAV`) : filet de
+ * sécurité pour que deux items partageant accidentellement une route
+ * ne s'allument pas ensemble.
  */
 export function BottomNav({ pendingReviewsCount }: Props) {
 	const location = useLocation();
