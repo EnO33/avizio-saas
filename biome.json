@@ -8,13 +8,13 @@
 	"files": {
 		"ignoreUnknown": false,
 		"includes": [
-			"**/src/**/*",
+			"src/**/*",
 			"**/.vscode/**/*",
 			"**/index.html",
 			"**/vite.config.ts",
 			"**/drizzle.config.ts",
-			"!**/src/routeTree.gen.ts",
-			"!**/src/styles.css"
+			"!src/routeTree.gen.ts",
+			"!src/styles.css"
 		]
 	},
 	"formatter": {
