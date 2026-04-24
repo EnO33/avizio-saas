@@ -163,23 +163,10 @@ function OnboardingPage() {
 				postalCode: null,
 				businessType: estType,
 				languageCode: "fr",
+				defaultTone: estTone,
 			},
 		});
 		if (result.kind === "ok") {
-			// Application côté client du defaultTone choisi (le server fn
-			// create ne le prend pas en prop pour rester minimal — on patch
-			// ensuite). Si l'update échoue, le tone restera sur sa valeur
-			// par défaut côté DB (warm) — pas bloquant pour avancer.
-			if (estTone !== "warm") {
-				// Import conditionnel pour éviter un round-trip inutile si
-				// l'utilisateur a gardé le ton par défaut (la majorité des cas).
-				const { updateEstablishmentFn } = await import(
-					"#/server/fns/establishments"
-				);
-				await updateEstablishmentFn({
-					data: { id: result.establishment.id, defaultTone: estTone },
-				});
-			}
 			setCommittedUpTo(1);
 			return true;
 		}
