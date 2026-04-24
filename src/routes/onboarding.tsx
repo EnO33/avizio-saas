@@ -4,7 +4,7 @@ import {
 } from "@clerk/tanstack-react-start";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { ArrowLeft, ArrowRight, Check } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "#/components/ui/button";
 import { Card } from "#/components/ui/card";
 import { ChoiceCard } from "#/components/ui/choice-card";
@@ -80,8 +80,34 @@ const STEPS = [
 
 function OnboardingPage() {
 	const navigate = useNavigate();
-	const { createOrganization, setActive } = useOrganizationList();
+	const orgList = useOrganizationList({ userMemberships: true });
+	const { createOrganization, setActive, userMemberships, isLoaded } = orgList;
 	const { organization: activeOrg } = useOrganization();
+
+	/*
+	  Edge case — l'utilisateur a une membership mais pas d'org active
+	  (changement d'appareil, race OAuth qui a buggé le setActive). Le
+	  guard `_authed.beforeLoad` l'a redirigé ici parce que `session.orgId`
+	  est null, mais il a déjà une org côté Clerk. On active la première
+	  membership et on repart sur /dashboard sans passer par les 3 étapes.
+
+	  Le `attemptedRef` empêche les double-runs sous React 19 strict mode.
+	*/
+	const autoActivateAttempted = useRef(false);
+	useEffect(() => {
+		if (!isLoaded) return;
+		if (userMemberships.isLoading) return;
+		if (autoActivateAttempted.current) return;
+		const memberships = userMemberships.data ?? [];
+		if (memberships.length === 0) return;
+		if (!setActive) return;
+		autoActivateAttempted.current = true;
+		const first = memberships[0];
+		if (!first) return;
+		void setActive({ organization: first.organization.id }).then(() => {
+			window.location.href = "/dashboard";
+		});
+	}, [isLoaded, userMemberships.isLoading, userMemberships.data, setActive]);
 
 	const [step, setStep] = useState<0 | 1 | 2>(0);
 	// On garde la trace du plus haut step qui a eu son action backend

@@ -2,7 +2,6 @@ import { useUser } from "@clerk/tanstack-react-start";
 import { createFileRoute } from "@tanstack/react-router";
 import { Calendar } from "lucide-react";
 import { z } from "zod";
-import { EnsureActiveOrganization } from "#/components/auth/ensure-active-organization";
 import { OAuthResultBanner } from "#/components/connections/oauth-result-banner";
 import { AiSummaryCard } from "#/components/dashboard/ai-summary-card";
 import { EstablishmentsCard } from "#/components/dashboard/establishments-card";
@@ -38,7 +37,6 @@ export const Route = createFileRoute("/_authed/dashboard")({
 });
 
 function Dashboard() {
-	const { orgId } = Route.useRouteContext();
 	const { reviewCounts, establishments, priorityReviews } =
 		Route.useLoaderData();
 	const { connected, error } = Route.useSearch();
@@ -52,7 +50,6 @@ function Dashboard() {
 	return (
 		<div className="mx-auto p-[32px_40px]" style={{ maxWidth: 1280 }}>
 			<OAuthResultBanner connected={connected} error={error} />
-			{!orgId ? <EnsureActiveOrganization /> : null}
 
 			<div className="mb-7 flex items-end justify-between">
 				<div>
