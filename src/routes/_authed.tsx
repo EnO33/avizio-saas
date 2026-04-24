@@ -1,6 +1,7 @@
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 import { Shell } from "#/components/shell/shell";
 import { ensureSignedIn } from "#/server/fns/auth-guards";
+import { listEstablishments } from "#/server/fns/establishments";
 import { countReviewsByStatus } from "#/server/fns/reviews";
 
 export const Route = createFileRoute("/_authed")({
@@ -16,7 +17,10 @@ export const Route = createFileRoute("/_authed")({
 		return session;
 	},
 	loader: async () => {
-		const counts = await countReviewsByStatus();
+		const [counts, establishments] = await Promise.all([
+			countReviewsByStatus(),
+			listEstablishments(),
+		]);
 		// Le badge de la sidebar additionne tout ce qui demande une action
 		// utilisateur : les nouveaux et les brouillons en cours. `responded`
 		// et `skipped` sont exclus — ils ne réclament plus rien.
@@ -27,17 +31,23 @@ export const Route = createFileRoute("/_authed")({
 		// visuellement correct pour tous les comptes actuels.
 		const trialDaysRemaining = 14;
 
-		return { pendingReviewsCount, trialDaysRemaining };
+		return {
+			pendingReviewsCount,
+			trialDaysRemaining,
+			establishmentsCount: establishments.length,
+		};
 	},
 	component: AuthedLayout,
 });
 
 function AuthedLayout() {
-	const { pendingReviewsCount, trialDaysRemaining } = Route.useLoaderData();
+	const { pendingReviewsCount, trialDaysRemaining, establishmentsCount } =
+		Route.useLoaderData();
 	return (
 		<Shell
 			pendingReviewsCount={pendingReviewsCount}
 			trialDaysRemaining={trialDaysRemaining}
+			establishmentsCount={establishmentsCount}
 		>
 			<Outlet />
 		</Shell>

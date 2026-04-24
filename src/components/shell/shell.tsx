@@ -9,6 +9,8 @@ type Props = {
 	readonly pendingReviewsCount: number;
 	/** Jours restants sur l'essai gratuit. `null` = pas d'essai actif. */
 	readonly trialDaysRemaining: number | null;
+	/** Nombre d'établissements dans l'org active — affiché dans la meta du switcher. */
+	readonly establishmentsCount: number;
 };
 
 /**
@@ -23,12 +25,14 @@ export function Shell({
 	children,
 	pendingReviewsCount,
 	trialDaysRemaining,
+	establishmentsCount,
 }: Props) {
 	return (
 		<div className="grid min-h-screen grid-cols-1 bg-bg md:grid-cols-[232px_1fr]">
 			<Sidebar
 				pendingReviewsCount={pendingReviewsCount}
 				trialDaysRemaining={trialDaysRemaining}
+				establishmentsCount={establishmentsCount}
 			/>
 			<main className="flex min-w-0 flex-col">
 				<Topbar hasNotifications={pendingReviewsCount > 0} />

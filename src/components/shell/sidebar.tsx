@@ -1,4 +1,4 @@
-import { OrganizationSwitcher, UserButton } from "@clerk/tanstack-react-start";
+import { UserButton } from "@clerk/tanstack-react-start";
 import { Link, useLocation } from "@tanstack/react-router";
 import type { LucideIcon } from "lucide-react";
 import {
@@ -9,6 +9,7 @@ import {
 	Store,
 } from "lucide-react";
 import { Logo } from "#/components/ui/logo";
+import { OrgSwitcher } from "./org-switcher";
 
 type NavId =
 	| "dashboard"
@@ -71,10 +72,24 @@ type Props = {
 	readonly pendingReviewsCount: number;
 	/** Jours restants sur l'essai gratuit. `null` = essai non actif (payant ou non connecté). */
 	readonly trialDaysRemaining: number | null;
+	/** Nombre d'établissements dans l'org active — passé à l'OrgSwitcher. */
+	readonly establishmentsCount: number;
 };
 
-export function Sidebar({ pendingReviewsCount, trialDaysRemaining }: Props) {
+export function Sidebar({
+	pendingReviewsCount,
+	trialDaysRemaining,
+	establishmentsCount,
+}: Props) {
 	const location = useLocation();
+
+	/*
+	  Copy honnête : tant que Stripe n'est pas branché, on affiche
+	  simplement « Essai » dans la meta du switcher plutôt que « Plan
+	  annuel » de la maquette. Basculera sur la vraie donnée le jour où
+	  `organizations.plan` existe.
+	*/
+	const planLabel = trialDaysRemaining != null ? "Essai" : null;
 
 	return (
 		<aside className="sticky top-0 hidden h-screen w-[232px] flex-col border-line-soft border-r bg-bg-deep px-3.5 py-5 md:flex">
@@ -83,26 +98,10 @@ export function Sidebar({ pendingReviewsCount, trialDaysRemaining }: Props) {
 				<Logo size={20} />
 			</div>
 
-			{/* Org switcher — widget Clerk stylisé pour imiter la carte de la
-			    maquette. L'appearance.elements cible les parties internes du
-			    trigger (carte) et du popover (menu d'orgs). */}
 			<div className="mb-4">
-				<OrganizationSwitcher
-					hidePersonal
-					afterCreateOrganizationUrl="/dashboard"
-					afterSelectOrganizationUrl="/dashboard"
-					appearance={{
-						elements: {
-							rootBox: "w-full",
-							organizationSwitcherTrigger:
-								"w-full justify-start rounded-[10px] border border-line-soft bg-paper px-3 py-2.5 hover:bg-bg shadow-sm",
-							organizationSwitcherTriggerIcon: "text-ink-mute",
-							organizationPreviewMainIdentifier:
-								"text-[12.5px] font-medium text-ink",
-							organizationPreviewSecondaryIdentifier:
-								"text-[10.5px] text-ink-mute",
-						},
-					}}
+				<OrgSwitcher
+					establishmentsCount={establishmentsCount}
+					planLabel={planLabel}
 				/>
 			</div>
 
