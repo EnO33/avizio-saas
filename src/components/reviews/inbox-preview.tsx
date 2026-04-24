@@ -36,7 +36,7 @@ export function InboxPreview({ review, establishment }: Props) {
 	const initials = getReviewInitials(review.authorName);
 
 	return (
-		<div className="max-w-[780px] px-9 pt-7 pb-10">
+		<div className="mx-auto max-w-[780px] px-9 pt-7 pb-10">
 			<div className="mb-[18px] flex items-center gap-2.5">
 				<PlatformIcon platform={review.platform} size={18} />
 				<span className="text-[12.5px] text-ink-soft">
