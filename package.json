@@ -39,7 +39,7 @@
     "@tanstack/react-router-ssr-query": "latest",
     "@tanstack/react-start": "latest",
     "@tanstack/router-plugin": "^1.132.0",
-    "@trigger.dev/sdk": "4.4.4",
+    "@trigger.dev/sdk": "4.4.5",
     "drizzle-orm": "^0.45.2",
     "drizzle-zod": "^0.8.3",
     "lucide-react": "^1.8.0",
